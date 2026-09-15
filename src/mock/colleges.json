@@ -1,0 +1,242 @@
+[
+  {
+    "id": "col_001",
+    "name": "Mumbai Institute of Technology",
+    "location": "Mumbai, Maharashtra",
+    "type": "Private",
+    "programs": ["Computer Engineering", "Information Technology", "Mechanical Engineering", "Electronics Engineering"],
+    "overallRating": 4.2,
+    "totalReviews": 187,
+    "recommendationPercent": 82,
+    "ratings": {
+      "teachingQuality": 4.3,
+      "infrastructure": {
+        "labs": 4.0,
+        "wifi": 3.6,
+        "hostel": 3.9,
+        "overall": 3.83
+      },
+      "careerPlacements": 4.1
+    },
+    "feedback": {
+      "positive": [
+        "Strong industry exposure through internships and live projects",
+        "Approachable and supportive faculty who go beyond curriculum",
+        "Excellent placement cell with top-tier company connections",
+        "Modern labs with latest equipment for practical learning"
+      ],
+      "complaints": [
+        "Wi-Fi connectivity is inconsistent in hostel blocks",
+        "Canteen food quality needs significant improvement",
+        "Some administrative processes are unnecessarily bureaucratic",
+        "Limited parking space during peak hours"
+      ],
+      "suggestions": [
+        "Upgrade lab equipment for final-year projects",
+        "Increase number of placement drives and off-campus opportunities",
+        "Introduce more elective subjects for skill diversification",
+        "Improve hostel facilities and mess quality"
+      ]
+    }
+  },
+  {
+    "id": "col_002",
+    "name": "Delhi College of Engineering",
+    "location": "New Delhi, Delhi",
+    "type": "Government",
+    "programs": ["Civil Engineering", "Computer Science", "Electrical Engineering", "Chemical Engineering"],
+    "overallRating": 4.5,
+    "totalReviews": 312,
+    "recommendationPercent": 91,
+    "ratings": {
+      "teachingQuality": 4.6,
+      "infrastructure": {
+        "labs": 4.4,
+        "wifi": 4.0,
+        "hostel": 4.2,
+        "overall": 4.2
+      },
+      "careerPlacements": 4.4
+    },
+    "feedback": {
+      "positive": [
+        "World-class faculty with extensive research backgrounds",
+        "Government-backed funding ensures top-quality infrastructure",
+        "Strong alumni network across global tech companies",
+        "Vibrant campus life with active student clubs and fests"
+      ],
+      "complaints": [
+        "Admission process is extremely competitive and stressful",
+        "Some older departments need infrastructure renovation",
+        "High student-to-teacher ratio in popular programs",
+        "Limited industry collaboration in non-CS departments"
+      ],
+      "suggestions": [
+        "Start more interdisciplinary programs combining engineering and business",
+        "Increase industry-sponsored research projects",
+        "Better mental health support infrastructure for students",
+        "More frequent alumni interaction sessions"
+      ]
+    }
+  },
+  {
+    "id": "col_003",
+    "name": "Bangalore Institute of Science & Technology",
+    "location": "Bengaluru, Karnataka",
+    "type": "Autonomous",
+    "programs": ["Data Science", "Artificial Intelligence", "Biotechnology", "Computer Science", "Information Systems"],
+    "overallRating": 4.0,
+    "totalReviews": 234,
+    "recommendationPercent": 76,
+    "ratings": {
+      "teachingQuality": 4.1,
+      "infrastructure": {
+        "labs": 3.8,
+        "wifi": 4.2,
+        "hostel": 3.5,
+        "overall": 3.83
+      },
+      "careerPlacements": 3.7
+    },
+    "feedback": {
+      "positive": [
+        "Cutting-edge AI and Data Science curriculum aligned with industry",
+        "Fast and reliable campus-wide Wi-Fi infrastructure",
+        "Frequent hackathons and innovation competitions",
+        "Close proximity to Bengaluru's booming tech ecosystem"
+      ],
+      "complaints": [
+        "Hostel facilities are below expectations for the fee charged",
+        "Career placement support needs major improvement",
+        "Lab equipment in non-CS departments is outdated",
+        "Cafeteria closes too early on weekdays"
+      ],
+      "suggestions": [
+        "Partner with more startups and tech companies for placements",
+        "Upgrade hostel facilities and introduce 24-hour amenities",
+        "Introduce a dedicated mentorship program for freshers",
+        "Add more practical workshops alongside theoretical courses"
+      ]
+    }
+  },
+  {
+    "id": "col_004",
+    "name": "Chennai Deemed University",
+    "location": "Chennai, Tamil Nadu",
+    "type": "Deemed",
+    "programs": ["Marine Engineering", "Aerospace Engineering", "Mechanical Engineering", "Naval Architecture"],
+    "overallRating": 3.7,
+    "totalReviews": 145,
+    "recommendationPercent": 68,
+    "ratings": {
+      "teachingQuality": 3.9,
+      "infrastructure": {
+        "labs": 3.5,
+        "wifi": 3.0,
+        "hostel": 3.3,
+        "overall": 3.27
+      },
+      "careerPlacements": 3.4
+    },
+    "feedback": {
+      "positive": [
+        "Unique specialization in marine and naval engineering",
+        "Strong connections with port authorities and shipping companies",
+        "Dedicated faculty with real industry experience",
+        "Affordable fee structure compared to similar institutions"
+      ],
+      "complaints": [
+        "Wi-Fi speeds are severely inadequate for modern learning needs",
+        "Limited exposure to emerging technologies like AI and cloud",
+        "Placement opportunities mostly limited to traditional industries",
+        "Campus infrastructure needs major modernization"
+      ],
+      "suggestions": [
+        "Integrate modern tech courses like IoT and automation into curriculum",
+        "Significantly upgrade internet infrastructure across campus",
+        "Expand placement network beyond maritime sector",
+        "Renovate hostels to meet contemporary student expectations"
+      ]
+    }
+  },
+  {
+    "id": "col_005",
+    "name": "Pune Vishwavidyalaya",
+    "location": "Pune, Maharashtra",
+    "type": "Government",
+    "programs": ["Commerce", "Arts & Humanities", "Computer Applications", "Management Studies", "Law"],
+    "overallRating": 3.9,
+    "totalReviews": 198,
+    "recommendationPercent": 73,
+    "ratings": {
+      "teachingQuality": 4.0,
+      "infrastructure": {
+        "labs": 3.6,
+        "wifi": 3.4,
+        "hostel": 3.8,
+        "overall": 3.6
+      },
+      "careerPlacements": 3.6
+    },
+    "feedback": {
+      "positive": [
+        "Beautiful heritage campus with a rich academic tradition",
+        "Excellent hostel facilities and campus security",
+        "Wide variety of programs across disciplines",
+        "Strong extracurricular culture and annual university fest"
+      ],
+      "complaints": [
+        "Online resources and digital library access are insufficient",
+        "Wi-Fi coverage is patchy in older building wings",
+        "Career guidance cell is understaffed",
+        "Some courses feel outdated compared to industry standards"
+      ],
+      "suggestions": [
+        "Modernize curriculum for commerce and management programs",
+        "Strengthen industry tie-ups for internship opportunities",
+        "Upgrade Wi-Fi to cover entire campus uniformly",
+        "Launch a dedicated career counseling portal for students"
+      ]
+    }
+  },
+  {
+    "id": "col_006",
+    "name": "Hyderabad Institute of Management",
+    "location": "Hyderabad, Telangana",
+    "type": "Private",
+    "programs": ["MBA", "Executive MBA", "Business Analytics", "Finance", "Human Resources"],
+    "overallRating": 4.4,
+    "totalReviews": 276,
+    "recommendationPercent": 88,
+    "ratings": {
+      "teachingQuality": 4.5,
+      "infrastructure": {
+        "labs": 4.3,
+        "wifi": 4.5,
+        "hostel": 4.1,
+        "overall": 4.3
+      },
+      "careerPlacements": 4.6
+    },
+    "feedback": {
+      "positive": [
+        "Outstanding placement record with top MNC recruiters every year",
+        "Exceptional faculty drawn from IIMs and global business schools",
+        "State-of-the-art campus with modern amenities",
+        "Rigorous and industry-relevant MBA curriculum"
+      ],
+      "complaints": [
+        "High tuition fees may be a barrier for some deserving students",
+        "Workload during first semester is extremely intense",
+        "Limited scholarship opportunities for meritorious students",
+        "Hostel rooms could be larger given the premium fees"
+      ],
+      "suggestions": [
+        "Introduce need-based scholarship programs",
+        "Add more social entrepreneurship and startup-focused courses",
+        "Create a stronger alumni mentorship platform",
+        "Provide more flexible elective options in the second year"
+      ]
+    }
+  }
+]

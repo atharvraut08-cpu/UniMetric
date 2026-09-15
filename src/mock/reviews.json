@@ -1,0 +1,452 @@
+[
+  {
+    "id": "rev_001",
+    "collegeId": "col_001",
+    "studentYear": "3rd Year",
+    "program": "Computer Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 3, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Great placement support and mentoring this year. Faculty are very accessible."
+  },
+  {
+    "id": "rev_002",
+    "collegeId": "col_001",
+    "studentYear": "2nd Year",
+    "program": "Information Technology",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 2, "hostel": 3, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Teaching quality is top-notch. Wi-Fi in hostel is a nightmare though."
+  },
+  {
+    "id": "rev_003",
+    "collegeId": "col_001",
+    "studentYear": "4th Year",
+    "program": "Mechanical Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 5, "wifi": 4, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Labs are excellent. Placement cell is very proactive with industry connections."
+  },
+  {
+    "id": "rev_004",
+    "collegeId": "col_001",
+    "studentYear": "1st Year",
+    "program": "Electronics Engineering",
+    "ratings": { "teachingQuality": 3, "labs": 3, "wifi": 3, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "Average experience so far. Still adjusting to college life and expectations."
+  },
+  {
+    "id": "rev_005",
+    "collegeId": "col_001",
+    "studentYear": "3rd Year",
+    "program": "Information Technology",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 2, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Great industry-oriented curriculum. Wi-Fi issues are a persistent problem."
+  },
+  {
+    "id": "rev_006",
+    "collegeId": "col_001",
+    "studentYear": "2nd Year",
+    "program": "Computer Engineering",
+    "ratings": { "teachingQuality": 2, "labs": 3, "wifi": 2, "hostel": 2, "careerPlacements": 3 },
+    "sentiment": "negative",
+    "comment": "Not satisfied with the quality of some junior faculty. Infrastructure is decent but Wi-Fi is terrible."
+  },
+  {
+    "id": "rev_007",
+    "collegeId": "col_001",
+    "studentYear": "4th Year",
+    "program": "Electronics Engineering",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 4, "hostel": 5, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Best decision of my life to join this college. Incredible faculty and great campus life."
+  },
+  {
+    "id": "rev_008",
+    "collegeId": "col_001",
+    "studentYear": "3rd Year",
+    "program": "Mechanical Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 3, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Solid institution with good placement support. Food quality is the only major complaint."
+  },
+  {
+    "id": "rev_009",
+    "collegeId": "col_002",
+    "studentYear": "4th Year",
+    "program": "Computer Science",
+    "ratings": { "teachingQuality": 5, "labs": 5, "wifi": 4, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Absolutely phenomenal college. The faculty here are industry legends. Best CS program in North India."
+  },
+  {
+    "id": "rev_010",
+    "collegeId": "col_002",
+    "studentYear": "2nd Year",
+    "program": "Electrical Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 4, "hostel": 5, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Well-funded infrastructure and world-class hostel facilities. Very happy with my choice."
+  },
+  {
+    "id": "rev_011",
+    "collegeId": "col_002",
+    "studentYear": "3rd Year",
+    "program": "Civil Engineering",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 4, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Exceptional academic environment. Research opportunities are unparalleled."
+  },
+  {
+    "id": "rev_012",
+    "collegeId": "col_002",
+    "studentYear": "1st Year",
+    "program": "Computer Science",
+    "ratings": { "teachingQuality": 5, "labs": 5, "wifi": 5, "hostel": 5, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Everything about this college is top-tier. Glad to be here!"
+  },
+  {
+    "id": "rev_013",
+    "collegeId": "col_002",
+    "studentYear": "3rd Year",
+    "program": "Chemical Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 4, "hostel": 4, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "Great academics. Placement in chemical engineering could be better but overall very satisfied."
+  },
+  {
+    "id": "rev_014",
+    "collegeId": "col_002",
+    "studentYear": "2nd Year",
+    "program": "Electrical Engineering",
+    "ratings": { "teachingQuality": 3, "labs": 4, "wifi": 3, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "neutral",
+    "comment": "Good college overall but some professors are not very engaging in class."
+  },
+  {
+    "id": "rev_015",
+    "collegeId": "col_002",
+    "studentYear": "4th Year",
+    "program": "Civil Engineering",
+    "ratings": { "teachingQuality": 5, "labs": 5, "wifi": 4, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Incredible four years. The alumni network here is extraordinary and helped me land my dream job."
+  },
+  {
+    "id": "rev_016",
+    "collegeId": "col_002",
+    "studentYear": "1st Year",
+    "program": "Chemical Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 3, "wifi": 3, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "Still in my first year but the academics are tough. Infrastructure could be better in chem department."
+  },
+  {
+    "id": "rev_017",
+    "collegeId": "col_002",
+    "studentYear": "2nd Year",
+    "program": "Computer Science",
+    "ratings": { "teachingQuality": 2, "labs": 4, "wifi": 4, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "negative",
+    "comment": "While infra is great, some faculty members are very unapproachable and dismissive."
+  },
+  {
+    "id": "rev_018",
+    "collegeId": "col_003",
+    "studentYear": "3rd Year",
+    "program": "Data Science",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 5, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "The data science curriculum is phenomenal and very industry-relevant. Wi-Fi is great everywhere."
+  },
+  {
+    "id": "rev_019",
+    "collegeId": "col_003",
+    "studentYear": "2nd Year",
+    "program": "Artificial Intelligence",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 5, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "Best AI program in Bengaluru. Faculty are researchers who publish regularly. Hostel is just OK."
+  },
+  {
+    "id": "rev_020",
+    "collegeId": "col_003",
+    "studentYear": "4th Year",
+    "program": "Computer Science",
+    "ratings": { "teachingQuality": 4, "labs": 3, "wifi": 4, "hostel": 3, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Good place to study. Startups often come for placements which is a great opportunity."
+  },
+  {
+    "id": "rev_021",
+    "collegeId": "col_003",
+    "studentYear": "3rd Year",
+    "program": "Biotechnology",
+    "ratings": { "teachingQuality": 3, "labs": 3, "wifi": 4, "hostel": 3, "careerPlacements": 2 },
+    "sentiment": "negative",
+    "comment": "Biotech department is severely underfunded. Labs are outdated and placements for bio students are scarce."
+  },
+  {
+    "id": "rev_022",
+    "collegeId": "col_003",
+    "studentYear": "1st Year",
+    "program": "Data Science",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 5, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Amazing place for tech enthusiasts. Hackathons every other month and great peer community."
+  },
+  {
+    "id": "rev_023",
+    "collegeId": "col_003",
+    "studentYear": "2nd Year",
+    "program": "Information Systems",
+    "ratings": { "teachingQuality": 3, "labs": 3, "wifi": 4, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "Decent college with a focus on tech. Could do better with placements for non-AI programs."
+  },
+  {
+    "id": "rev_024",
+    "collegeId": "col_003",
+    "studentYear": "4th Year",
+    "program": "Artificial Intelligence",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 5, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Graduating with offers from top companies. The AI program truly prepared me well."
+  },
+  {
+    "id": "rev_025",
+    "collegeId": "col_003",
+    "studentYear": "3rd Year",
+    "program": "Computer Science",
+    "ratings": { "teachingQuality": 2, "labs": 3, "wifi": 4, "hostel": 2, "careerPlacements": 3 },
+    "sentiment": "negative",
+    "comment": "Hostel is pathetic and some professors just read from slides. Wi-Fi is the only saving grace."
+  },
+  {
+    "id": "rev_026",
+    "collegeId": "col_004",
+    "studentYear": "3rd Year",
+    "program": "Marine Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 2, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "Unique program that prepares you for the maritime industry. Great faculty with sea-going experience."
+  },
+  {
+    "id": "rev_027",
+    "collegeId": "col_004",
+    "studentYear": "2nd Year",
+    "program": "Naval Architecture",
+    "ratings": { "teachingQuality": 4, "labs": 3, "wifi": 2, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "Good for niche maritime programs. Very poor internet connectivity. Decent hostel."
+  },
+  {
+    "id": "rev_028",
+    "collegeId": "col_004",
+    "studentYear": "4th Year",
+    "program": "Aerospace Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 3, "hostel": 4, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "Exceptional aerospace labs. Placement is limited but the ones that come are top defense companies."
+  },
+  {
+    "id": "rev_029",
+    "collegeId": "col_004",
+    "studentYear": "1st Year",
+    "program": "Marine Engineering",
+    "ratings": { "teachingQuality": 3, "labs": 3, "wifi": 2, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "Still early days but the college has potential. Internet needs urgent upgrade."
+  },
+  {
+    "id": "rev_030",
+    "collegeId": "col_004",
+    "studentYear": "3rd Year",
+    "program": "Mechanical Engineering",
+    "ratings": { "teachingQuality": 3, "labs": 3, "wifi": 2, "hostel": 2, "careerPlacements": 3 },
+    "sentiment": "negative",
+    "comment": "Infrastructure is quite old and needs renovation. Wi-Fi barely works. Food is terrible."
+  },
+  {
+    "id": "rev_031",
+    "collegeId": "col_004",
+    "studentYear": "4th Year",
+    "program": "Naval Architecture",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 3, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Best place in India to study naval architecture. Faculty are extremely experienced and helpful."
+  },
+  {
+    "id": "rev_032",
+    "collegeId": "col_004",
+    "studentYear": "2nd Year",
+    "program": "Aerospace Engineering",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 3, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "Great specialized college but lacks modern amenities. Good for focused engineering study."
+  },
+  {
+    "id": "rev_033",
+    "collegeId": "col_004",
+    "studentYear": "3rd Year",
+    "program": "Mechanical Engineering",
+    "ratings": { "teachingQuality": 2, "labs": 2, "wifi": 1, "hostel": 2, "careerPlacements": 2 },
+    "sentiment": "negative",
+    "comment": "Honestly disappointed. Wi-Fi is useless, labs are outdated, and placements for mech are nearly zero."
+  },
+  {
+    "id": "rev_034",
+    "collegeId": "col_005",
+    "studentYear": "2nd Year",
+    "program": "Computer Applications",
+    "ratings": { "teachingQuality": 4, "labs": 3, "wifi": 3, "hostel": 4, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "Lovely campus with great hostel. Academics are solid but Wi-Fi in labs could be better."
+  },
+  {
+    "id": "rev_035",
+    "collegeId": "col_005",
+    "studentYear": "3rd Year",
+    "program": "Management Studies",
+    "ratings": { "teachingQuality": 4, "labs": 3, "wifi": 3, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Good management program with strong industry connections. Campus events are excellent."
+  },
+  {
+    "id": "rev_036",
+    "collegeId": "col_005",
+    "studentYear": "1st Year",
+    "program": "Commerce",
+    "ratings": { "teachingQuality": 3, "labs": 2, "wifi": 2, "hostel": 3, "careerPlacements": 2 },
+    "sentiment": "negative",
+    "comment": "Wi-Fi is terrible and commerce labs are non-existent. Not what I expected for the fee."
+  },
+  {
+    "id": "rev_037",
+    "collegeId": "col_005",
+    "studentYear": "4th Year",
+    "program": "Law",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 4, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Law program here is exceptional. Moot courts and internship placements are very well organized."
+  },
+  {
+    "id": "rev_038",
+    "collegeId": "col_005",
+    "studentYear": "2nd Year",
+    "program": "Arts & Humanities",
+    "ratings": { "teachingQuality": 4, "labs": 3, "wifi": 3, "hostel": 4, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "Good for humanities but career placement support for arts students is virtually absent."
+  },
+  {
+    "id": "rev_039",
+    "collegeId": "col_005",
+    "studentYear": "3rd Year",
+    "program": "Computer Applications",
+    "ratings": { "teachingQuality": 4, "labs": 3, "wifi": 4, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "positive",
+    "comment": "Faculty are knowledgeable and helpful. Curriculum is slightly dated but exams are fair."
+  },
+  {
+    "id": "rev_040",
+    "collegeId": "col_005",
+    "studentYear": "1st Year",
+    "program": "Management Studies",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 3, "hostel": 4, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Heritage university with a wonderful culture. Very proud to be a student here."
+  },
+  {
+    "id": "rev_041",
+    "collegeId": "col_005",
+    "studentYear": "4th Year",
+    "program": "Commerce",
+    "ratings": { "teachingQuality": 3, "labs": 2, "wifi": 2, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "The university has a great reputation but the actual experience in commerce department is mediocre."
+  },
+  {
+    "id": "rev_042",
+    "collegeId": "col_006",
+    "studentYear": "2nd Year",
+    "program": "MBA",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 5, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Absolutely worth every rupee. The faculty are incredible and the placement record speaks for itself."
+  },
+  {
+    "id": "rev_043",
+    "collegeId": "col_006",
+    "studentYear": "1st Year",
+    "program": "Business Analytics",
+    "ratings": { "teachingQuality": 5, "labs": 5, "wifi": 5, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "State-of-the-art campus and an incredibly rigorous program. Already have a pre-placement offer!"
+  },
+  {
+    "id": "rev_044",
+    "collegeId": "col_006",
+    "studentYear": "2nd Year",
+    "program": "Finance",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 5, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Finance program here is elite. Top banks and financial firms recruit directly. Very satisfied."
+  },
+  {
+    "id": "rev_045",
+    "collegeId": "col_006",
+    "studentYear": "1st Year",
+    "program": "MBA",
+    "ratings": { "teachingQuality": 4, "labs": 4, "wifi": 4, "hostel": 3, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Great institution but the first semester workload is brutally intense. Infrastructure is excellent."
+  },
+  {
+    "id": "rev_046",
+    "collegeId": "col_006",
+    "studentYear": "2nd Year",
+    "program": "Human Resources",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 5, "hostel": 5, "careerPlacements": 4 },
+    "sentiment": "positive",
+    "comment": "Best HR program I've encountered. The faculty have real industry experience in CHRO roles."
+  },
+  {
+    "id": "rev_047",
+    "collegeId": "col_006",
+    "studentYear": "1st Year",
+    "program": "Business Analytics",
+    "ratings": { "teachingQuality": 3, "labs": 4, "wifi": 5, "hostel": 3, "careerPlacements": 3 },
+    "sentiment": "neutral",
+    "comment": "The fees are too high for what is offered in the first year. Wi-Fi and labs are great though."
+  },
+  {
+    "id": "rev_048",
+    "collegeId": "col_006",
+    "studentYear": "2nd Year",
+    "program": "MBA",
+    "ratings": { "teachingQuality": 2, "labs": 4, "wifi": 4, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "negative",
+    "comment": "A couple of professors are just not up to the mark. But placements are so good that you can overlook it."
+  },
+  {
+    "id": "rev_049",
+    "collegeId": "col_006",
+    "studentYear": "1st Year",
+    "program": "Finance",
+    "ratings": { "teachingQuality": 5, "labs": 5, "wifi": 5, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Top-notch in every way. Guest lectures from industry leaders every week."
+  },
+  {
+    "id": "rev_050",
+    "collegeId": "col_006",
+    "studentYear": "2nd Year",
+    "program": "Executive MBA",
+    "ratings": { "teachingQuality": 5, "labs": 4, "wifi": 5, "hostel": 4, "careerPlacements": 5 },
+    "sentiment": "positive",
+    "comment": "Transformative experience. The Executive MBA program has completely changed my career trajectory."
+  }
+]
