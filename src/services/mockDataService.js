@@ -65,3 +65,32 @@ export async function submitReview(payload) {
   const res = await axios.post(`${API_BASE_URL}/reviews/`, payload);
   return res.data;
 }
+
+/**
+ * Gets pre-computed ML insights for a specific college.
+ * @param {string|number} collegeId
+ * @returns {Object} Insights: keyDrivers, clusterSummary, associationRules, predictiveRecommendScore
+ */
+export async function getCollegeInsights(collegeId) {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/analytics/college/${collegeId}/insights/`);
+    return res.data;
+  } catch (error) {
+    if (error.response && error.response.status === 404) return null;
+    throw error;
+  }
+}
+
+/**
+ * Gets global analytics overview (category clusters + cross-college rules).
+ * @returns {Object} Overview: categoryClusters, crossCollegeRules
+ */
+export async function getOverviewInsights() {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/analytics/overview/`);
+    return res.data;
+  } catch (error) {
+    if (error.response && error.response.status === 404) return null;
+    throw error;
+  }
+}

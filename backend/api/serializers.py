@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import College, Program, StudentProfile, DateDim, FeedbackCategory, FeedbackFact
+from .models import College, Program, DateDim, FeedbackCategory, FeedbackFact
 from django.db.models import Avg
 
 class ProgramSerializer(serializers.ModelSerializer):

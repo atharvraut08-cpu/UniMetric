@@ -4,6 +4,7 @@ import { getColleges } from '../services/mockDataService';
 import CollegeSelector from '../components/compare/CollegeSelector';
 import ComparisonTable from '../components/compare/ComparisonTable';
 import ComparisonBarChart from '../components/compare/ComparisonBarChart';
+import DataDrivenInsightsSection from '../components/insights/DataDrivenInsightsSection';
 
 export default function ComparePage() {
   const [colleges, setColleges] = useState([]);
@@ -85,6 +86,25 @@ export default function ComparePage() {
           <div>
             <h2 className="text-lg font-semibold text-white mb-4">Detailed Metrics</h2>
             <ComparisonTable collegeA={collegeA} collegeB={collegeB} />
+          </div>
+
+          {/* ML Insights side-by-side */}
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-4">Data-Driven Insights Comparison</h2>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-slate-400 border-b border-slate-800 pb-2">
+                  {collegeA.name}
+                </p>
+                <DataDrivenInsightsSection collegeId={collegeA.id} collegeName={collegeA.name} />
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-slate-400 border-b border-slate-800 pb-2">
+                  {collegeB.name}
+                </p>
+                <DataDrivenInsightsSection collegeId={collegeB.id} collegeName={collegeB.name} />
+              </div>
+            </div>
           </div>
         </div>
       )}

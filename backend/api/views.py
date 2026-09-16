@@ -1,8 +1,8 @@
 from rest_framework import viewsets, views, status
 from rest_framework.response import Response
-from django.db.models import Avg, Count, Q, F
+from django.db.models import Avg, Count, Q, F, ExpressionWrapper
 from django.db.models.functions import Cast
-from django.db.models import FloatField
+from django.db.models import FloatField, IntegerField
 from .models import College, Program, StudentProfile, DateDim, FeedbackCategory, FeedbackFact
 from .serializers import CollegeListSerializer, ProgramSerializer, ReviewSubmitSerializer
 from datetime import date
@@ -30,12 +30,13 @@ class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = queryset.annotate(
             avg_score=Avg('feedback__score')
         )
-        # Recommendation percent (count of true would_recommend per distinct submission)
-        # We can just average the boolean would_recommend field (which is duplicated per fact)
-        # Wait, if we average a boolean field across all facts, it yields the same as across submissions.
-        # But Postgres requires cast to float or integer to average a boolean.
+        # Recommendation percent: cast boolean → integer (0/1), then AVG, then × 100
+        # PostgreSQL cannot directly AVG a boolean; it can AVG an integer.
         queryset = queryset.annotate(
-            recommend_pct=Avg(Cast('feedback__would_recommend', FloatField())) * 100
+            recommend_pct=ExpressionWrapper(
+                Avg(Cast('feedback__would_recommend', IntegerField())) * 100,
+                output_field=FloatField(),
+            )
         )
 
         return queryset

@@ -8,6 +8,7 @@ import CategoryPerformanceChart from '../components/dashboard/CategoryPerformanc
 import InfrastructureBreakdownChart from '../components/dashboard/InfrastructureBreakdownChart';
 import SentimentPieChart from '../components/dashboard/SentimentPieChart';
 import FeedbackLists from '../components/dashboard/FeedbackLists';
+import DataDrivenInsightsSection from '../components/insights/DataDrivenInsightsSection';
 
 const typeColors = {
   Private:    'bg-violet-500/15 text-violet-300 border border-violet-500/20',
@@ -130,6 +131,11 @@ export default function CollegeDashboardPage() {
       {/* Row 3: Feedback Lists */}
       <div className="animate-fade-in-up delay-300">
         <FeedbackLists feedback={college.feedback} />
+      </div>
+
+      {/* ── Row 4: Data-Driven ML Insights ── */}
+      <div className="animate-fade-in-up delay-400">
+        <DataDrivenInsightsSection collegeId={id} collegeName={college.name} />
       </div>
     </div>
   );
