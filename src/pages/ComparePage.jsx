@@ -23,20 +23,49 @@ export default function ComparePage() {
   const [detailB, setDetailB] = useState(null);
 
   useEffect(() => {
-    getColleges().then(setColleges).catch(console.error);
+    let isMounted = true;
+    getColleges()
+      .then((data) => {
+        if (!isMounted) return;
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        setColleges(list);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.error('API Error [ComparePage]: Failed to fetch colleges on mount:', err);
+        setColleges([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     if (selectedA && selectedB) {
-      compareColleges(selectedA.id, selectedB.id).then((data) => {
-        // DRF endpoint returns a list of two college summaries
-        setDetailA(data.find(c => c.id === selectedA.id));
-        setDetailB(data.find(c => c.id === selectedB.id));
-      }).catch(console.error);
+      compareColleges(selectedA.id, selectedB.id)
+        .then((data) => {
+          if (!isMounted) return;
+          const list = Array.isArray(data) ? data : (data?.results || []);
+          // DRF endpoint returns a list of two college summaries
+          setDetailA(list.find((c) => c.id === selectedA.id) || null);
+          setDetailB(list.find((c) => c.id === selectedB.id) || null);
+        })
+        .catch((err) => {
+          if (!isMounted) return;
+          console.error('API Error [ComparePage]: Failed to compare colleges:', err);
+          setDetailA(null);
+          setDetailB(null);
+        });
     } else {
       setDetailA(null);
       setDetailB(null);
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedA, selectedB]);
 
   const hasBoth = detailA && detailB;
@@ -97,7 +126,7 @@ export default function ComparePage() {
       </div>
 
       {/* Selectors */}
-      <div className="glass-card p-6 animate-fade-in-up delay-100">
+      <div className="glass-card p-6 animate-fade-in-up delay-100 relative z-30">
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center">
           <CollegeSelector
             colleges={colleges}

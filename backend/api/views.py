@@ -1,4 +1,5 @@
 from rest_framework import viewsets, views, status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db.models import Avg, Count, Q, F, ExpressionWrapper
 from django.db.models.functions import Cast
@@ -9,6 +10,7 @@ from datetime import date
 
 class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CollegeListSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = College.objects.all()
@@ -42,6 +44,8 @@ class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
 class CollegeSummaryView(views.APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, id):
         try:
             college = College.objects.get(id=id)
@@ -129,6 +133,8 @@ class CollegeSummaryView(views.APIView):
         }
 
 class CollegeCompareView(views.APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
         ids_str = request.query_params.get('ids', '')
         if not ids_str:
@@ -145,6 +151,8 @@ class CollegeCompareView(views.APIView):
         return Response(results)
 
 class CollegeReviewsView(views.APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, id):
         try:
             college = College.objects.get(id=id)
@@ -183,6 +191,7 @@ class CollegeReviewsView(views.APIView):
 class ProgramViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProgramSerializer
     queryset = Program.objects.all()
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         qs = super().get_queryset()

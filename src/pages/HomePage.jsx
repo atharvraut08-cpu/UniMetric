@@ -31,16 +31,43 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getColleges().then(data => {
-      setAllColleges(data);
-      setResults(data);
-      setLoading(false);
-    });
+    let isMounted = true;
+    setLoading(true);
+    getColleges()
+      .then((data) => {
+        if (!isMounted) return;
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        setAllColleges(list);
+        setResults(list);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.error('API Error [HomePage]: Failed to fetch colleges on mount:', err);
+        setAllColleges([]);
+        setResults([]);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleSearch = useCallback((q) => {
     setQuery(q);
-    searchColleges(q).then(setResults);
+    searchColleges(q)
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        setResults(list);
+      })
+      .catch((err) => {
+        console.error('API Error [HomePage]: Failed to search colleges:', err);
+        setResults([]);
+      });
   }, []);
 
   return (

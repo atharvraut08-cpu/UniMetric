@@ -14,6 +14,9 @@ const formatUserData = (sbUser) => {
     email: sbUser.email,
     name: meta.full_name || sbUser.email?.split('@')[0] || 'User',
     role: meta.role || 'Student',
+    college_id: meta.college_id || null,
+    year_of_study: meta.year_of_study || null,
+    user_metadata: meta,
   };
 };
 
@@ -99,7 +102,15 @@ export function RoleProvider({ children }) {
   /**
    * Sign Up with Email, Password, Name, and Role
    */
-  const signUp = async ({ email, password, name, role: userRole }) => {
+  const signUp = async ({ email, password, name, role: userRole, college_id, year_of_study, ...extraData }) => {
+    const metaData = {
+      full_name: name,
+      role: userRole || 'Student',
+      ...(college_id ? { college_id } : {}),
+      ...(year_of_study ? { year_of_study } : {}),
+      ...extraData,
+    };
+
     if (!isConfigured) {
       // Fallback for local testing before Supabase keys are configured
       const mockUser = {
@@ -107,6 +118,9 @@ export function RoleProvider({ children }) {
         email,
         name,
         role: userRole || 'Student',
+        college_id: college_id || null,
+        year_of_study: year_of_study || null,
+        user_metadata: metaData,
       };
       setUser(mockUser);
       setRole(mockUser.role);
@@ -117,10 +131,7 @@ export function RoleProvider({ children }) {
       email,
       password,
       options: {
-        data: {
-          full_name: name,
-          role: userRole || 'Student',
-        },
+        data: metaData,
       },
     });
 

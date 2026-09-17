@@ -5,7 +5,7 @@ from django.db.models import Avg
 class ProgramSerializer(serializers.ModelSerializer):
     class Meta:
         model = Program
-        fields = ['id', 'program_name', 'degree_type', 'subject_area']
+        fields = ['id', 'college_id', 'program_name', 'degree_type', 'subject_area']
 
 class CollegeListSerializer(serializers.ModelSerializer):
     # Map to frontend expected names
@@ -42,10 +42,26 @@ class ReviewSubmitSerializer(serializers.Serializer):
     programId = serializers.IntegerField(required=False, allow_null=True)
     studentYear = serializers.CharField()
     ratings = serializers.DictField(child=serializers.IntegerField())
-    wouldRecommend = serializers.BooleanField()
-    positiveFeedback = serializers.CharField(allow_blank=True)
-    complaints = serializers.CharField(allow_blank=True)
-    suggestions = serializers.CharField(allow_blank=True)
+    wouldRecommend = serializers.BooleanField(required=False)
+    would_recommend = serializers.CharField(required=False, allow_blank=True)
+    positiveFeedback = serializers.CharField(allow_blank=True, required=False, default="")
+    complaints = serializers.CharField(allow_blank=True, required=False, default="")
+    suggestions = serializers.CharField(allow_blank=True, required=False, default="")
+
+    def validate(self, attrs):
+        # Normalize wouldRecommend from either wouldRecommend (bool) or would_recommend ('Y'/'N'/bool)
+        if 'wouldRecommend' not in attrs:
+            raw = attrs.get('would_recommend')
+            if raw is not None:
+                if isinstance(raw, bool):
+                    attrs['wouldRecommend'] = raw
+                elif str(raw).strip().upper() in ('Y', 'YES', 'TRUE', '1'):
+                    attrs['wouldRecommend'] = True
+                else:
+                    attrs['wouldRecommend'] = False
+            else:
+                attrs['wouldRecommend'] = True
+        return attrs
 
     def validate_ratings(self, value):
         required_keys = ['teachingQuality', 'labs', 'wifi', 'hostel', 'careerPlacements']

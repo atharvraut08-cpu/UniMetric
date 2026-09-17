@@ -42,11 +42,16 @@ export default function CollegeSelector({ colleges, selected, onChange, label, e
     };
   }, [open, handleOutsideClick]);
 
-  const filtered = colleges.filter((c) => {
+  const collegeList = Array.isArray(colleges) ? colleges : (colleges?.results || []);
+  const filtered = collegeList.filter((c) => {
+    if (!c) return false;
     if (excludeId && c.id === excludeId) return false;
     if (!query) return true;
     const q = query.toLowerCase();
-    return c.name.toLowerCase().includes(q) || c.location.toLowerCase().includes(q);
+    return (
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.location && c.location.toLowerCase().includes(q))
+    );
   });
 
   const toggleOpen = () => setOpen((prev) => !prev);
@@ -65,7 +70,7 @@ export default function CollegeSelector({ colleges, selected, onChange, label, e
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className={`relative ${open ? 'z-50' : 'z-10'}`}>
       <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1.5">{label}</p>
 
       {/* Trigger — <div role="button"> avoids nested-button invalid HTML */}
@@ -138,33 +143,34 @@ export default function CollegeSelector({ colleges, selected, onChange, label, e
           </div>
 
           {/* Options list */}
-          <div className="max-h-56 overflow-y-auto">
+          <ul className="max-h-60 overflow-y-auto divide-y divide-slate-800/50 overscroll-contain">
             {filtered.length === 0 ? (
-              <p className="p-4 text-sm text-slate-500 text-center">No colleges found.</p>
+              <li className="p-4 text-sm text-slate-500 text-center">No colleges found.</li>
             ) : (
               filtered.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  role="option"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSelect(c);
-                  }}
-                  onClick={() => handleSelect(c)}
-                  className="w-full text-left px-4 py-3 hover:bg-slate-800 active:bg-slate-700 cursor-pointer transition-colors border-b border-slate-800/50 last:border-0"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{c.name}</p>
-                      <p className="text-slate-500 text-xs">{c.location}</p>
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    role="option"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelect(c);
+                    }}
+                    onClick={() => handleSelect(c)}
+                    className="w-full text-left px-4 py-3 hover:bg-slate-800 active:bg-slate-700 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{c.name}</p>
+                        <p className="text-slate-500 text-xs">{c.location}</p>
+                      </div>
+                      <RatingBadge rating={c.avgScore || c.overallRating} size="sm" />
                     </div>
-                    <RatingBadge rating={c.avgScore || c.overallRating} size="sm" />
-                  </div>
-                </button>
+                  </button>
+                </li>
               ))
             )}
-          </div>
+          </ul>
         </div>
       )}
     </div>

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
+import { getColleges } from '../services/mockDataService';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff,
   ArrowLeft, LogIn, UserPlus, ChevronRight, ShieldCheck,
-  AlertCircle, CheckCircle2,
+  AlertCircle, CheckCircle2, Building2, Calendar,
 } from 'lucide-react';
 
 const ROLES = ['Prospect', 'Student', 'Admin'];
@@ -33,10 +34,14 @@ function Field({ id, label, type = 'text', placeholder, value, onChange, icon: I
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           required={required}
-          className={`w-full ${Icon ? 'pl-10' : 'pl-4'} ${rightSlot ? 'pr-10' : 'pr-4'} py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all`}
+          className={`w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/60 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all ${
+            Icon ? 'pl-10' : ''
+          } ${rightSlot ? 'pr-10' : ''}`}
         />
         {rightSlot && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightSlot}</div>
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+            {rightSlot}
+          </div>
         )}
       </div>
     </div>
@@ -155,9 +160,23 @@ function SignUpForm({ onSwitch }) {
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [selectedRole, setSelectedRole] = useState('Student');
+  const [colleges, setColleges] = useState([]);
+  const [selectedCollegeId, setSelectedCollegeId] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    getColleges()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        setColleges(list);
+      })
+      .catch((err) => {
+        console.error('Failed to load colleges in SignUpForm:', err);
+      });
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -171,6 +190,11 @@ function SignUpForm({ onSwitch }) {
     if (password !== confirmPw) return setErrorMsg('Passwords do not match.');
     if (!selectedRole) return setErrorMsg('Please select a role.');
 
+    if (selectedRole === 'Student') {
+      if (!selectedCollegeId) return setErrorMsg('Please select your college.');
+      if (!selectedYear) return setErrorMsg('Please select your year of study.');
+    }
+
     setLoading(true);
     try {
       const data = await signUp({
@@ -178,6 +202,8 @@ function SignUpForm({ onSwitch }) {
         email: email.trim(),
         password,
         role: selectedRole,
+        college_id: selectedRole === 'Student' ? selectedCollegeId : undefined,
+        year_of_study: selectedRole === 'Student' ? selectedYear : undefined,
       });
 
       // If Supabase has email confirmation enabled
@@ -284,6 +310,69 @@ function SignUpForm({ onSwitch }) {
           <p className="mt-2 text-xs text-slate-500 animate-fade-in">{roleDescriptions[selectedRole]}</p>
         )}
       </div>
+
+      {/* Student-specific fields: College & Year of Study */}
+      {selectedRole === 'Student' && (
+        <div className="space-y-4 p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 animate-fade-in">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+            <GraduationCap className="w-4 h-4 text-indigo-400" />
+            Student Academic Profile
+          </div>
+
+          {/* Select Your College */}
+          <div>
+            <label htmlFor="signup-college" className="block text-sm text-slate-300 mb-1.5 font-medium">
+              Select Your College <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <select
+                id="signup-college"
+                value={selectedCollegeId}
+                onChange={(e) => setSelectedCollegeId(e.target.value)}
+                required
+                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">— Select Your College —</option>
+                {colleges.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.location})
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* Year of Study */}
+          <div>
+            <label htmlFor="signup-year" className="block text-sm text-slate-300 mb-1.5 font-medium">
+              Year of Study <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <select
+                id="signup-year"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                required
+                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">— Select Year of Study —</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <button
         type="submit"

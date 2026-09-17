@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Send, Loader2 } from 'lucide-react';
-import { getColleges, submitReview } from '../../services/mockDataService';
+import { useNavigate } from 'react-router-dom';
+import { Send, Loader2, Lock, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { getColleges, getPrograms, submitReview } from '../../services/mockDataService';
 import RatingInput from './RatingInput';
 import SubmitConfirmation from './SubmitConfirmation';
+import { useRole } from '../../context/RoleContext';
 
-const YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Alumni'];
+const YEARS = [
+  { label: '1st Year', value: '1' },
+  { label: '2nd Year', value: '2' },
+  { label: '3rd Year', value: '3' },
+  { label: '4th Year', value: '4' },
+];
 
 const INITIAL_RATINGS = {
   teachingQuality: 0,
@@ -23,8 +30,9 @@ const INITIAL_TEXT = {
 const INITIAL_FORM = {
   collegeId: '',
   studentYear: '',
-  program: '',
+  programId: '',
   ratings: INITIAL_RATINGS,
+  wouldRecommend: true,
   text: INITIAL_TEXT,
 };
 
@@ -36,18 +44,48 @@ const ratingFields = [
   { key: 'careerPlacements', label: 'Career Placements' },
 ];
 
-export default function FeedbackForm() {
+export default function FeedbackForm({ lockedCollegeId: propCollegeId, lockedYear: propYear }) {
+  const navigate = useNavigate();
+  const { session, user } = useRole();
   const [colleges, setColleges] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [form, setForm] = useState(INITIAL_FORM);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Read metadata from props, user, or session
+  const collegeIdFromAuth = propCollegeId || user?.college_id || user?.user_metadata?.college_id || session?.user?.user_metadata?.college_id || '';
+  const yearFromAuth = propYear || user?.year_of_study || user?.user_metadata?.year_of_study || session?.user?.user_metadata?.year_of_study || '';
+
+  const isCollegeLocked = Boolean(collegeIdFromAuth);
+  const isYearLocked = Boolean(yearFromAuth);
+
   useEffect(() => {
     getColleges().then(setColleges);
+    getPrograms().then(setPrograms);
   }, []);
 
+  // Pre-fill locked values from authenticated profile
+  useEffect(() => {
+    if (collegeIdFromAuth || yearFromAuth) {
+      setForm((prev) => ({
+        ...prev,
+        collegeId: collegeIdFromAuth ? String(collegeIdFromAuth) : prev.collegeId,
+        studentYear: yearFromAuth ? String(yearFromAuth) : prev.studentYear,
+      }));
+    }
+  }, [collegeIdFromAuth, yearFromAuth]);
+
+  useEffect(() => {
+    // Reset program when college changes
+    setForm((prev) => ({ ...prev, programId: '' }));
+  }, [form.collegeId]);
+
   const selectedCollege = colleges.find((c) => c.id == form.collegeId);
+  const filteredPrograms = form.collegeId
+    ? programs.filter((p) => p.college_id == form.collegeId)
+    : [];
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -72,7 +110,10 @@ export default function FeedbackForm() {
     const e = {};
     if (!form.collegeId) e.collegeId = 'Please select a college.';
     if (!form.studentYear) e.studentYear = 'Please select your year.';
-    if (!form.program.trim()) e.program = 'Please enter your program.';
+    if (!form.programId) e.programId = 'Please select your program.';
+    if (form.wouldRecommend === null || form.wouldRecommend === undefined) {
+      e.wouldRecommend = 'Please indicate whether you would recommend this college.';
+    }
     const unrated = ratingFields.filter((f) => form.ratings[f.key] === 0);
     if (unrated.length > 0) e.ratings = 'Please rate all categories.';
     return e;
@@ -87,21 +128,51 @@ export default function FeedbackForm() {
     }
     
     setIsSubmitting(true);
+    const isRecommended = Boolean(form.wouldRecommend);
+
     try {
       await submitReview({
         collegeId: form.collegeId,
         studentYear: form.studentYear,
-        program: form.program,
+        programId: parseInt(form.programId, 10),
         ratings: form.ratings,
-        wouldRecommend: form.ratings.overall >= 3, // Simplification
-        ...form.text,
-      });
+        wouldRecommend: isRecommended,
+        would_recommend: isRecommended ? 'Y' : 'N',
+        positiveFeedback: form.text.positive,
+        complaints: form.text.complaints,
+        suggestions: form.text.suggestions,
+      }, session?.access_token);
+      
+      const submittedCollegeId = form.collegeId;
       setForm(INITIAL_FORM);
       setErrors({});
       setShowConfirm(true);
+      
+      setTimeout(() => {
+        navigate(`/college/${submittedCollegeId}`);
+      }, 2000);
+      
     } catch (err) {
-      console.error(err);
-      alert('Failed to submit review');
+      console.error('Full Submission Error:', err);
+      console.log('Payload Sent:', {
+        collegeId: form.collegeId,
+        studentYear: form.studentYear,
+        programId: parseInt(form.programId, 10),
+        ratings: form.ratings,
+        wouldRecommend: isRecommended,
+        would_recommend: isRecommended ? 'Y' : 'N',
+        positiveFeedback: form.text.positive,
+        complaints: form.text.complaints,
+        suggestions: form.text.suggestions,
+      });
+      
+      const backendError = err.response?.data;
+      if (backendError) {
+        console.error('Backend Error Payload:', backendError);
+        alert(`Failed to submit review. Backend says:\n${JSON.stringify(backendError, null, 2)}`);
+      } else {
+        alert(`Failed to submit review: ${err.message}`);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -119,11 +190,23 @@ export default function FeedbackForm() {
 
           {/* College Selector */}
           <div>
-            <label className="block text-sm text-slate-300 mb-1.5">College</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm text-slate-300 font-medium">College</label>
+              {isCollegeLocked && (
+                <span className="inline-flex items-center gap-1 text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                  <Lock className="w-3 h-3" /> Profile Locked
+                </span>
+              )}
+            </div>
             <select
               value={form.collegeId}
               onChange={(e) => setField('collegeId', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+              disabled={isCollegeLocked}
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
+                isCollegeLocked
+                  ? 'border-slate-800 bg-slate-900/80 text-slate-300 cursor-not-allowed opacity-80'
+                  : 'border-slate-700 bg-slate-800 text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+              }`}
             >
               <option value="">— Select College —</option>
               {colleges.map((c) => (
@@ -135,34 +218,55 @@ export default function FeedbackForm() {
 
           {/* Year */}
           <div>
-            <label className="block text-sm text-slate-300 mb-1.5">Student Year</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={`block text-sm font-medium ${!form.collegeId ? 'text-slate-500' : 'text-slate-300'}`}>
+                Student Year
+              </label>
+              {isYearLocked && (
+                <span className="inline-flex items-center gap-1 text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                  <Lock className="w-3 h-3" /> Profile Locked
+                </span>
+              )}
+            </div>
             <select
               value={form.studentYear}
               onChange={(e) => setField('studentYear', e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+              disabled={isYearLocked || !form.collegeId}
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
+                isYearLocked || !form.collegeId
+                  ? 'border-slate-800 bg-slate-900/80 text-slate-300 cursor-not-allowed opacity-80'
+                  : 'border-slate-700 bg-slate-800 text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+              }`}
             >
               <option value="">— Select Year —</option>
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+              {YEARS.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
             </select>
             {errors.studentYear && <p className="mt-1 text-xs text-rose-400">{errors.studentYear}</p>}
           </div>
 
-          {/* Program */}
+          {/* Program Selector */}
           <div>
-            <label className="block text-sm text-slate-300 mb-1.5">
+            <label className={`block text-sm mb-1.5 ${!form.collegeId ? 'text-slate-500' : 'text-slate-300'} font-medium`}>
               Program
-              {selectedCollege && (
-                <span className="ml-2 text-xs text-slate-500">(e.g. {selectedCollege.programs[0]})</span>
-              )}
             </label>
-            <input
-              type="text"
-              value={form.program}
-              onChange={(e) => setField('program', e.target.value)}
-              placeholder="e.g. Computer Engineering"
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            />
-            {errors.program && <p className="mt-1 text-xs text-rose-400">{errors.program}</p>}
+            <select
+              value={form.programId}
+              onChange={(e) => setField('programId', e.target.value)}
+              disabled={!form.collegeId}
+              className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all ${
+                !form.collegeId
+                  ? 'border-slate-800 bg-slate-800/50 text-slate-500 cursor-not-allowed'
+                  : 'border-slate-700 bg-slate-800 text-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer'
+              }`}
+            >
+              <option value="">— Select Program —</option>
+              {filteredPrograms.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.program_name} {p.degree_type ? `(${p.degree_type})` : ''}
+                </option>
+              ))}
+            </select>
+            {errors.programId && <p className="mt-1 text-xs text-rose-400">{errors.programId}</p>}
           </div>
         </div>
 
@@ -183,6 +287,62 @@ export default function FeedbackForm() {
                 onChange={(v) => setRating(key, v)}
               />
             ))}
+          </div>
+
+          {/* Recommendation Question */}
+          <div className="pt-5 border-t border-slate-700/60 space-y-3">
+            <div>
+              <label className="block text-sm text-slate-200 font-medium mb-1">
+                Would you recommend this college to a friend? <span className="text-red-400">*</span>
+              </label>
+              <p className="text-xs text-slate-400">
+                Your recommendation directly informs prospective students looking for authentic peer advice.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Would you recommend this college to a friend?">
+              <label
+                className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl border cursor-pointer select-none text-sm font-medium transition-all ${
+                  form.wouldRecommend === true
+                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300 shadow-md shadow-emerald-500/10'
+                    : 'border-slate-700 bg-slate-800/60 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="wouldRecommend"
+                  value="yes"
+                  checked={form.wouldRecommend === true}
+                  onChange={() => setField('wouldRecommend', true)}
+                  className="sr-only"
+                />
+                <ThumbsUp className={`w-4 h-4 ${form.wouldRecommend === true ? 'text-emerald-400' : 'text-slate-500'}`} />
+                <span>Yes, I recommend</span>
+              </label>
+
+              <label
+                className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl border cursor-pointer select-none text-sm font-medium transition-all ${
+                  form.wouldRecommend === false
+                    ? 'border-rose-500 bg-rose-500/15 text-rose-300 shadow-md shadow-rose-500/10'
+                    : 'border-slate-700 bg-slate-800/60 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="wouldRecommend"
+                  value="no"
+                  checked={form.wouldRecommend === false}
+                  onChange={() => setField('wouldRecommend', false)}
+                  className="sr-only"
+                />
+                <ThumbsDown className={`w-4 h-4 ${form.wouldRecommend === false ? 'text-rose-400' : 'text-slate-500'}`} />
+                <span>No, I don't recommend</span>
+              </label>
+            </div>
+
+            {errors.wouldRecommend && (
+              <p className="text-xs text-rose-400">{errors.wouldRecommend}</p>
+            )}
           </div>
         </div>
 
