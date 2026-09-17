@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   GraduationCap, BarChart3, PlusCircle,
-  Menu, X, LogIn, LogOut, UserCircle2,
+  Menu, X, LogIn, LogOut, UserCircle2, ShieldCheck,
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
@@ -14,14 +14,16 @@ export default function Navbar() {
   // Build centre nav links based on auth state
   const navLinks = isAuthenticated
     ? [
-        { to: '/',        label: 'Home',            icon: BarChart3   },
-        { to: '/compare', label: 'Compare',          icon: BarChart3   },
+        { to: '/',       label: 'Home',             icon: BarChart3   },
+        ...(role === 'Admin'
+          ? [{ to: '/admin',   label: 'Admin Dashboard', icon: ShieldCheck }]
+          : [{ to: '/compare', label: 'Compare',          icon: BarChart3   }]),
         ...(role === 'Student'
           ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
           : []),
       ]
     : [
-        { to: '/',     label: 'Home',        icon: BarChart3 },
+        { to: '/',     label: 'Home',         icon: BarChart3 },
         { to: '/auth', label: 'Try UniMetric', icon: LogIn    },
       ];
 
@@ -53,14 +55,23 @@ export default function Navbar() {
                 key={to}
                 to={to}
                 end={to === '/'}
-                className={({ isActive }) =>
-                  `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={({ isActive }) => {
+                  const isAdmin = to === '/admin';
+                  if (isAdmin) {
+                    return `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'text-amber-400/70 hover:text-amber-300 hover:bg-amber-500/10'
+                    }`;
+                  }
+                  return `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
                       ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                  }`
-                }
+                  }`;
+                }}
               >
+                {to === '/admin' && <ShieldCheck className="w-3.5 h-3.5" />}
                 {label}
               </NavLink>
             ))}

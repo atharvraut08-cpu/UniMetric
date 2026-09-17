@@ -1,7 +1,14 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
+import { useRole } from '../../context/RoleContext';
 
 export default function Footer() {
+  const { pathname } = useLocation();
+  const { isAuthenticated } = useRole();
+
+  // Only visible on the home page for logged-out visitors
+  if (pathname !== '/' || isAuthenticated) return null;
+
   return (
     <footer className="border-t border-slate-800 bg-slate-950 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -5,6 +5,7 @@ import CollegeDashboardPage from './pages/CollegeDashboardPage';
 import ComparePage from './pages/ComparePage';
 import SubmitFeedbackPage from './pages/SubmitFeedbackPage';
 import AuthPage from './pages/AuthPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 
 const router = createBrowserRouter([
   // Auth page has its own full-screen layout (no Navbar/Footer)
@@ -21,6 +22,7 @@ const router = createBrowserRouter([
       { path: 'college/:id',     element: <CollegeDashboardPage /> },
       { path: 'compare',         element: <ComparePage />          },
       { path: 'submit-feedback', element: <SubmitFeedbackPage />   },
+      { path: 'admin',           element: <AdminDashboardPage />   },
     ],
   },
 ]);
