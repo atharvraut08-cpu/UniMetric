@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, ArrowLeftRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BarChart3, ArrowLeftRight, Lock, LogIn, ArrowLeft } from 'lucide-react';
 import { getColleges, compareColleges } from '../services/mockDataService';
 import CollegeSelector from '../components/compare/CollegeSelector';
 import ComparisonTable from '../components/compare/ComparisonTable';
 import ComparisonBarChart from '../components/compare/ComparisonBarChart';
 import DataDrivenInsightsSection from '../components/insights/DataDrivenInsightsSection';
+import { useRole } from '../context/RoleContext';
 
 export default function ComparePage() {
+  const { isAuthenticated } = useRole();
+  const navigate = useNavigate();
+
   const [colleges, setColleges] = useState([]);
   
   // Basic objects for dropdowns
@@ -35,6 +40,46 @@ export default function ComparePage() {
   }, [selectedA, selectedB]);
 
   const hasBoth = detailA && detailB;
+
+  // ── Auth Guard ────────────────────────────────────────────────
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
+        <div className="glass-card p-10 max-w-md w-full flex flex-col items-center gap-6">
+          {/* Lock icon */}
+          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+            <Lock className="w-8 h-8 text-indigo-400" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Registered Users Only</h2>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Comparing colleges side-by-side is a feature reserved for registered users.
+              Log in with a Prospect or Student account to access this tool.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 w-full">
+            <button
+              onClick={() => navigate('/')}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700 hover:text-white transition-all duration-200"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </button>
+            <button
+              onClick={() => navigate('/auth')}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-lg shadow-indigo-500/20"
+            >
+              <LogIn className="w-4 h-4" />
+              Log In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  // ─────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">

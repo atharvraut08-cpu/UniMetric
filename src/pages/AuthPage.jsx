@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff,
@@ -314,7 +314,10 @@ function SignUpForm({ onSwitch }) {
 
 /* ─── Main Auth Page ─── */
 export default function AuthPage() {
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState(
+    searchParams.get('mode') === 'signup' ? 'signup' : 'login'
+  ); // 'login' | 'signup'
 
   return (
     <div className="min-h-screen flex">

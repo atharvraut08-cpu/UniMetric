@@ -1,40 +1,35 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   GraduationCap, BarChart3, PlusCircle,
-  ChevronDown, Menu, X, LogIn, ShieldCheck,
+  Menu, X, LogIn, LogOut, UserCircle2,
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
-const roles = ['Prospect', 'Student', 'Admin'];
-
-const roleHints = {
-  Prospect: 'Browsing & comparing colleges',
-  Student:  'View your college insights',
-  Admin:    'Manage platform data',
-};
-
-const roleDotColor = {
-  Prospect: 'bg-indigo-400',
-  Student:  'bg-emerald-400',
-  Admin:    'bg-amber-400',
-};
-
 export default function Navbar() {
-  const { role, setRole, user, isAuthenticated, logout } = useRole();
-  const [roleOpen, setRoleOpen] = useState(false);
+  const { role, user, isAuthenticated, logout } = useRole();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
 
-  // "Submit Feedback" is only visible to Students
-  const baseNavLinks = [
-    { to: '/',        label: 'Home',    icon: BarChart3  },
-    { to: '/compare', label: 'Compare', icon: BarChart3  },
-  ];
+  // Build centre nav links based on auth state
+  const navLinks = isAuthenticated
+    ? [
+        { to: '/',        label: 'Home',            icon: BarChart3   },
+        { to: '/compare', label: 'Compare',          icon: BarChart3   },
+        ...(role === 'Student'
+          ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
+          : []),
+      ]
+    : [
+        { to: '/',     label: 'Home',        icon: BarChart3 },
+        { to: '/auth', label: 'Try UniMetric', icon: LogIn    },
+      ];
 
-  const studentLink = { to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle };
-  const navLinks = role === 'Student'
-    ? [...baseNavLinks, studentLink]
-    : baseNavLinks;
+  const handleLogout = async () => {
+    await logout();
+    setMobileOpen(false);
+    navigate('/');
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-xl">
@@ -51,7 +46,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav */}
+          {/* Desktop Centre Nav */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map(({ to, label }) => (
               <NavLink
@@ -71,75 +66,56 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Right side: Role Switcher + Login + Mobile toggle */}
-          <div className="flex items-center gap-2">
-
-            {/* Role Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setRoleOpen(!roleOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 text-sm text-slate-300 hover:border-indigo-500/50 hover:text-white transition-all duration-200"
-              >
-                <span className={`w-2 h-2 rounded-full animate-pulse ${roleDotColor[role]}`} />
-                <span className="hidden sm:inline text-slate-400">Viewing as:</span>
-                <span className="font-semibold text-white">{role}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${roleOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {roleOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-700 bg-slate-900/98 backdrop-blur shadow-2xl overflow-hidden z-50 animate-fade-in">
-                  {roles.map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => { setRole(r); setRoleOpen(false); }}
-                      className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                        role === r
-                          ? 'bg-indigo-500/15 text-indigo-300'
-                          : 'text-slate-300 hover:bg-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {r === 'Admin' && <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />}
-                        <span className="font-medium">{r}</span>
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5 ml-5">{roleHints[r]}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Login / Logout button */}
+          {/* Desktop Right Side */}
+          <div className="hidden md:flex items-center gap-2">
             {isAuthenticated ? (
-              <div className="hidden sm:flex items-center gap-3">
-                <span className="text-sm font-medium text-slate-300">
-                  {user?.name || 'User'}
-                </span>
+              <>
+                {/* User Name Badge */}
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60">
+                  <UserCircle2 className="w-4 h-4 text-indigo-400" />
+                  <span className="text-sm font-medium text-slate-200">
+                    {user?.name || 'User'}
+                  </span>
+                </div>
+
+                {/* Logout Button */}
                 <button
-                  onClick={logout}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700 hover:text-white transition-all duration-200"
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 text-sm font-medium hover:bg-rose-500/15 hover:border-rose-500/40 hover:text-rose-300 transition-all duration-200"
                 >
+                  <LogOut className="w-3.5 h-3.5" />
                   Logout
                 </button>
-              </div>
+              </>
             ) : (
-              <Link
-                to="/auth"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 text-sm font-medium hover:bg-indigo-500/20 hover:text-white transition-all duration-200"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                Login
-              </Link>
-            )}
+              <>
+                {/* Sign Up */}
+                <Link
+                  to="/auth?mode=signup"
+                  className="px-4 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 text-sm font-medium hover:border-indigo-500/50 hover:text-white transition-all duration-200"
+                >
+                  Sign Up
+                </Link>
 
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+                {/* Log In */}
+                <Link
+                  to="/auth"
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-lg shadow-indigo-500/20"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  Log In
+                </Link>
+              </>
+            )}
           </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
 
         {/* Mobile Nav */}
@@ -162,26 +138,43 @@ export default function Navbar() {
                 {label}
               </NavLink>
             ))}
-            {isAuthenticated ? (
-              <button
-                onClick={() => {
-                  logout();
-                  setMobileOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-slate-400 hover:text-white"
-              >
-                Logout
-              </button>
-            ) : (
-              <Link
-                to="/auth"
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-indigo-300 hover:text-white"
-              >
-                <LogIn className="w-4 h-4" />
-                Login / Sign Up
-              </Link>
-            )}
+
+            {/* Mobile Auth Actions */}
+            <div className="mt-2 pt-2 border-t border-slate-800">
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300">
+                    <UserCircle2 className="w-4 h-4 text-indigo-400" />
+                    {user?.name || 'User'}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/auth?mode=signup"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                  >
+                    Sign Up
+                  </Link>
+                  <Link
+                    to="/auth"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-indigo-300 hover:text-white hover:bg-indigo-500/10 rounded-lg transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    Log In
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Users, ArrowRight, Building2 } from 'lucide-react';
 import RatingBadge from './RatingBadge';
+import { useRole } from '../../context/RoleContext';
 
 const typeColors = {
   Private:    'bg-violet-500/15 text-violet-300 border border-violet-500/20',
@@ -11,12 +12,22 @@ const typeColors = {
 
 export default function CollegeCard({ college }) {
   const navigate = useNavigate();
+  const { isAuthenticated } = useRole();
 
   const recPercent = college.recommendationPercent;
 
+  const handleCardClick = () => {
+    if (!isAuthenticated) {
+      // Redirect unauthenticated users to the auth page
+      navigate('/auth');
+    } else {
+      navigate(`/college/${college.id}`);
+    }
+  };
+
   return (
     <div
-      onClick={() => navigate(`/college/${college.id}`)}
+      onClick={handleCardClick}
       className="glass-card hover-lift cursor-pointer p-5 flex flex-col gap-4 group"
     >
       {/* Header row */}
@@ -76,9 +87,18 @@ export default function CollegeCard({ college }) {
       </div>
 
       {/* CTA */}
-      <div className="flex items-center justify-end text-indigo-400 text-xs font-medium group-hover:text-indigo-300 transition-colors">
-        View Dashboard
-        <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
+      <div className="flex items-center justify-end gap-1 text-indigo-400 text-xs font-medium group-hover:text-indigo-300 transition-colors">
+        {isAuthenticated ? (
+          <>
+            View Dashboard
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </>
+        ) : (
+          <>
+            Sign in to View
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </>
+        )}
       </div>
     </div>
   );

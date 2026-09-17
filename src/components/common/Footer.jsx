@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { GraduationCap, ExternalLink, Send, Users } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -19,16 +19,7 @@ export default function Footer() {
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
               Transforming scattered student opinions into structured, data-driven insights for smarter college decisions.
             </p>
-            <div className="flex items-center gap-3 mt-4">
-              {[ExternalLink, Send, Users].map((Icon, i) => (
-                <button
-                  key={i}
-                  className="w-8 h-8 rounded-lg border border-slate-700 bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-indigo-500/50 transition-all duration-200"
-                >
-                  <Icon className="w-4 h-4" />
-                </button>
-              ))}
-            </div>
+
           </div>
 
           {/* Navigation */}
@@ -56,11 +47,18 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold text-sm mb-4">Platform</h3>
             <ul className="space-y-2">
-              {['About Us', 'Privacy Policy', 'Terms of Service', 'Contact Support'].map((item) => (
-                <li key={item}>
-                  <button className="text-slate-400 hover:text-indigo-400 text-sm transition-colors duration-200">
-                    {item}
-                  </button>
+              {[
+                { label: 'About Us',        href: '/' },
+                { label: 'Privacy Policy',  href: '/' },
+                { label: 'Terms of Service',href: '/' },
+              ].map(({ label, href }) => (
+                <li key={label}>
+                  <a
+                    href={href}
+                    className="text-slate-400 hover:text-indigo-400 text-sm transition-colors duration-200"
+                  >
+                    {label}
+                  </a>
                 </li>
               ))}
             </ul>

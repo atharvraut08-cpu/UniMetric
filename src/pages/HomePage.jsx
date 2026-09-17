@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BarChart3, ArrowRight, Star, TrendingUp, Users } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import CollegeCard from '../components/common/CollegeCard';
@@ -14,7 +14,17 @@ const stats = [
 ];
 
 export default function HomePage() {
-  const { role } = useRole();
+  const { role, isAuthenticated } = useRole();
+  const navigate = useNavigate();
+
+  const handleCompareClick = (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/auth');
+    } else {
+      navigate('/compare');
+    }
+  };
   const [allColleges, setAllColleges] = useState([]);
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState('');
@@ -78,13 +88,14 @@ export default function HomePage() {
               </Link>
             ) : (
               <>
-                <Link
-                  to="/compare"
+                <a
+                  href="/compare"
+                  onClick={handleCompareClick}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 text-sm font-medium hover:border-indigo-500/50 hover:text-white transition-all duration-200 ${role === 'Prospect' ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20' : ''}`}
                 >
                   <BarChart3 className="w-4 h-4" />
                   Compare Colleges
-                </Link>
+                </a>
                 {role === 'Student' && (
                   <Link
                     to="/submit-feedback"
