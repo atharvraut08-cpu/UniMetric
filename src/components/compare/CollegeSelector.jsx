@@ -90,7 +90,7 @@ export default function CollegeSelector({ colleges, selected, onChange, label, e
         )}
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {selected && <RatingBadge rating={selected.overallRating} size="sm" />}
+          {selected && <RatingBadge rating={selected.avgScore || selected.overallRating} size="sm" />}
           {selected ? (
             <button
               type="button"
@@ -125,6 +125,12 @@ export default function CollegeSelector({ colleges, selected, onChange, label, e
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && filtered.length > 0) {
+                    e.preventDefault();
+                    handleSelect(filtered[0]);
+                  }
+                }}
                 placeholder="Search…"
                 className="w-full pl-8 pr-3 py-1.5 bg-slate-800 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
               />
@@ -141,15 +147,19 @@ export default function CollegeSelector({ colleges, selected, onChange, label, e
                   key={c.id}
                   type="button"
                   role="option"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelect(c);
+                  }}
                   onClick={() => handleSelect(c)}
-                  className="w-full text-left px-4 py-3 hover:bg-slate-800 active:bg-slate-700 transition-colors border-b border-slate-800/50 last:border-0"
+                  className="w-full text-left px-4 py-3 hover:bg-slate-800 active:bg-slate-700 cursor-pointer transition-colors border-b border-slate-800/50 last:border-0"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-white text-sm font-medium truncate">{c.name}</p>
                       <p className="text-slate-500 text-xs">{c.location}</p>
                     </div>
-                    <RatingBadge rating={c.overallRating} size="sm" />
+                    <RatingBadge rating={c.avgScore || c.overallRating} size="sm" />
                   </div>
                 </button>
               ))

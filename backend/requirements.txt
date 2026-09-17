@@ -3,6 +3,7 @@ djangorestframework>=3.15
 django-cors-headers>=4.0
 psycopg2-binary>=2.9
 python-dotenv>=1.0
+dj-database-url>=2.1
 
 # Data Mining & Machine Learning (Phase 3)
 pandas>=2.0

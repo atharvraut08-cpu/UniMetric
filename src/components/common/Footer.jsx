@@ -69,7 +69,7 @@ export default function Footer() {
 
         <div className="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-slate-500 text-xs">
-            © 2025 UniMetric. College Review & Analytics System — Phase 1 Demo.
+            © 2025 UniMetric College Review & Analytics System
           </p>
           <p className="text-slate-600 text-xs">
             Built with React · Vite · Recharts · Tailwind CSS

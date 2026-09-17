@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useRole } from '../context/RoleContext';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff,
   ArrowLeft, LogIn, UserPlus, ChevronRight, ShieldCheck,
+  AlertCircle, CheckCircle2,
 } from 'lucide-react';
 
 const ROLES = ['Prospect', 'Student', 'Admin'];
@@ -14,11 +16,11 @@ const roleDescriptions = {
 };
 
 /* ─── Reusable form field ─── */
-function Field({ id, label, type = 'text', placeholder, value, onChange, icon: Icon, rightSlot }) {
+function Field({ id, label, type = 'text', placeholder, value, onChange, icon: Icon, rightSlot, required = false }) {
   return (
     <div>
       <label htmlFor={id} className="block text-sm text-slate-300 mb-1.5 font-medium">
-        {label}
+        {label} {required && <span className="text-red-400">*</span>}
       </label>
       <div className="relative">
         {Icon && (
@@ -30,6 +32,7 @@ function Field({ id, label, type = 'text', placeholder, value, onChange, icon: I
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
+          required={required}
           className={`w-full ${Icon ? 'pl-10' : 'pl-4'} ${rightSlot ? 'pr-10' : 'pr-4'} py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all`}
         />
         {rightSlot && (
@@ -43,24 +46,41 @@ function Field({ id, label, type = 'text', placeholder, value, onChange, icon: I
 /* ─── Login form ─── */
 function LoginForm({ onSwitch }) {
   const navigate = useNavigate();
+  const { signIn, isSupabaseConfigured } = useRole();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Phase 1: demo only — no real auth
-    console.log('[UniMetric] Login attempt (mock):', { email });
+    setErrorMsg('');
+    if (!email || !password) {
+      setErrorMsg('Please enter both email and password.');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await signIn({ email, password });
       navigate('/');
-    }, 1000);
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to sign in. Please verify your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {errorMsg && (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       <Field
         id="login-email"
         label="Email address"
@@ -69,6 +89,7 @@ function LoginForm({ onSwitch }) {
         value={email}
         onChange={setEmail}
         icon={Mail}
+        required
       />
       <Field
         id="login-password"
@@ -78,6 +99,7 @@ function LoginForm({ onSwitch }) {
         value={password}
         onChange={setPassword}
         icon={Lock}
+        required
         rightSlot={
           <button
             type="button"
@@ -89,8 +111,9 @@ function LoginForm({ onSwitch }) {
         }
       />
 
-      <div className="flex items-center justify-end">
-        <button type="button" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <span>{isSupabaseConfigured ? 'Secured by Supabase' : 'Local Auth Mode'}</span>
+        <button type="button" className="text-indigo-400 hover:text-indigo-300 transition-colors">
           Forgot password?
         </button>
       </div>
@@ -125,26 +148,67 @@ function LoginForm({ onSwitch }) {
 /* ─── Sign-up form ─── */
 function SignUpForm({ onSwitch }) {
   const navigate = useNavigate();
+  const { signUp, isSupabaseConfigured } = useRole();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedRole, setSelectedRole] = useState('Student');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('[UniMetric] Sign-up attempt (mock):', { name, email, role: selectedRole });
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!name.trim()) return setErrorMsg('Full Name is required.');
+    if (!email.trim()) return setErrorMsg('Email address is required.');
+    if (!password) return setErrorMsg('Password is required.');
+    if (password.length < 6) return setErrorMsg('Password must be at least 6 characters.');
+    if (password !== confirmPw) return setErrorMsg('Passwords do not match.');
+    if (!selectedRole) return setErrorMsg('Please select a role.');
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const data = await signUp({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role: selectedRole,
+      });
+
+      // If Supabase has email confirmation enabled
+      if (data?.user && !data?.session && isSupabaseConfigured) {
+        setSuccessMsg('Account created successfully! Please check your email to verify your address before signing in.');
+      } else {
+        navigate('/');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to create account.');
+    } finally {
       setLoading(false);
-      navigate('/');
-    }, 1200);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {errorMsg && (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
       <Field
         id="signup-name"
         label="Full name"
@@ -152,6 +216,7 @@ function SignUpForm({ onSwitch }) {
         value={name}
         onChange={setName}
         icon={User}
+        required
       />
       <Field
         id="signup-email"
@@ -161,15 +226,17 @@ function SignUpForm({ onSwitch }) {
         value={email}
         onChange={setEmail}
         icon={Mail}
+        required
       />
       <Field
         id="signup-password"
         label="Password"
         type={showPw ? 'text' : 'password'}
-        placeholder="Min. 8 characters"
+        placeholder="Min. 6 characters"
         value={password}
         onChange={setPassword}
         icon={Lock}
+        required
         rightSlot={
           <button
             type="button"
@@ -188,12 +255,13 @@ function SignUpForm({ onSwitch }) {
         value={confirmPw}
         onChange={setConfirmPw}
         icon={Lock}
+        required
       />
 
       {/* Role picker */}
       <div>
         <label className="block text-sm text-slate-300 mb-2 font-medium">
-          I am a…
+          I am a… <span className="text-red-400">*</span>
         </label>
         <div className="grid grid-cols-3 gap-2">
           {ROLES.map((r) => (
@@ -203,7 +271,7 @@ function SignUpForm({ onSwitch }) {
               onClick={() => setSelectedRole(r)}
               className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl border text-xs font-medium transition-all duration-200 ${
                 selectedRole === r
-                  ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300'
+                  ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300 shadow-md shadow-indigo-500/10'
                   : 'border-slate-700 bg-slate-800/60 text-slate-400 hover:border-slate-600 hover:text-slate-300'
               }`}
             >
@@ -244,7 +312,7 @@ function SignUpForm({ onSwitch }) {
   );
 }
 
-/* ─── Page ─── */
+/* ─── Main Auth Page ─── */
 export default function AuthPage() {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
 
@@ -291,7 +359,7 @@ export default function AuthPage() {
           </ul>
         </div>
 
-        <p className="text-slate-600 text-xs">© 2025 UniMetric — Phase 1 Demo</p>
+        <p className="text-slate-600 text-xs">© 2025 UniMetric — College Review & Analytics System</p>
       </div>
 
       {/* Right panel — form */}
@@ -360,10 +428,6 @@ export default function AuthPage() {
             )}
           </div>
 
-          {/* Phase 1 disclaimer */}
-          <p className="mt-5 text-center text-xs text-slate-600">
-            Phase 1 demo — authentication is UI-only. No credentials are stored or verified.
-          </p>
         </div>
       </div>
     </div>

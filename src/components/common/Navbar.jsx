@@ -21,7 +21,7 @@ const roleDotColor = {
 };
 
 export default function Navbar() {
-  const { role, setRole } = useRole();
+  const { role, setRole, user, isAuthenticated, logout } = useRole();
   const [roleOpen, setRoleOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -109,14 +109,28 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Login button */}
-            <Link
-              to="/auth"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 text-sm font-medium hover:bg-indigo-500/20 hover:text-white transition-all duration-200"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              Login
-            </Link>
+            {/* Login / Logout button */}
+            {isAuthenticated ? (
+              <div className="hidden sm:flex items-center gap-3">
+                <span className="text-sm font-medium text-slate-300">
+                  {user?.name || 'User'}
+                </span>
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 text-sm font-medium hover:bg-slate-700 hover:text-white transition-all duration-200"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/auth"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 text-sm font-medium hover:bg-indigo-500/20 hover:text-white transition-all duration-200"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Login
+              </Link>
+            )}
 
             {/* Mobile menu button */}
             <button
@@ -148,14 +162,26 @@ export default function Navbar() {
                 {label}
               </NavLink>
             ))}
-            <Link
-              to="/auth"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-indigo-300 hover:text-white"
-            >
-              <LogIn className="w-4 h-4" />
-              Login / Sign Up
-            </Link>
+            {isAuthenticated ? (
+              <button
+                onClick={() => {
+                  logout();
+                  setMobileOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-slate-400 hover:text-white"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-indigo-300 hover:text-white"
+              >
+                <LogIn className="w-4 h-4" />
+                Login / Sign Up
+              </Link>
+            )}
           </div>
         )}
       </div>

@@ -2,6 +2,8 @@ import { PlusCircle, Shield, Lock, ShieldCheck, BarChart3, Users, TrendingUp, Al
 import { Link } from 'react-router-dom';
 import FeedbackForm from '../components/feedback/FeedbackForm';
 import { useRole } from '../context/RoleContext';
+import { useState, useEffect } from 'react';
+import { getColleges } from '../services/mockDataService';
 
 /* ─── Prospect view: locked state ─── */
 function ProspectView() {
@@ -34,13 +36,7 @@ function ProspectView() {
   );
 }
 
-/* ─── Admin view: dashboard placeholder ─── */
-const adminStats = [
-  { icon: Users,      label: 'Total Students',   value: '1,247',  color: 'text-indigo-400'  },
-  { icon: BarChart3,  label: 'Colleges Managed', value: '6',      color: 'text-violet-400'  },
-  { icon: TrendingUp, label: 'Reviews This Month', value: '184',  color: 'text-emerald-400' },
-  { icon: AlertTriangle, label: 'Flagged Reviews', value: '3',   color: 'text-amber-400'   },
-];
+/* ─── Admin view: dashboard ─── */
 
 const recentReviews = [
   { college: 'Mumbai Institute of Technology', sentiment: 'positive', program: 'Computer Engineering', date: 'Today, 2:14 PM' },
@@ -57,6 +53,22 @@ const sentimentPill = {
 };
 
 function AdminView() {
+  const [colleges, setColleges] = useState([]);
+  
+  useEffect(() => {
+    getColleges().then(setColleges).catch(console.error);
+  }, []);
+
+  const totalColleges = colleges.length;
+  const totalSubmissions = colleges.reduce((sum, c) => sum + (c.unique_reviews || 0), 0);
+
+  const adminStats = [
+    { icon: Users,      label: 'Total Students',   value: '1,247',  color: 'text-indigo-400'  }, // Mock
+    { icon: BarChart3,  label: 'Colleges Managed', value: totalColleges,  color: 'text-violet-400'  },
+    { icon: TrendingUp, label: 'Total Submissions', value: totalSubmissions,  color: 'text-emerald-400' },
+    { icon: AlertTriangle, label: 'Flagged Reviews', value: '0',   color: 'text-amber-400'   },
+  ];
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       {/* Header */}
@@ -66,7 +78,7 @@ function AdminView() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-          <p className="text-slate-400 text-sm">Platform overview — Phase 2 backend integration placeholder</p>
+          <p className="text-slate-400 text-sm">Platform overview</p>
         </div>
       </div>
 
@@ -105,15 +117,6 @@ function AdminView() {
         </div>
       </div>
 
-      {/* Phase 2 notice */}
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 animate-fade-in-up delay-300">
-        <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-        <p className="text-slate-400 text-xs leading-relaxed">
-          <span className="text-amber-300 font-medium">Phase 2 placeholder:</span>{' '}
-          This admin view will connect to the Django REST API and PostgreSQL analytics backend in Phase 2.
-          All data shown above is hardcoded for UI demonstration purposes.
-        </p>
-      </div>
     </div>
   );
 }
@@ -139,7 +142,7 @@ function StudentView() {
         <Shield className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
         <p className="text-slate-400 text-xs leading-relaxed">
           <span className="text-white font-medium">Privacy notice:</span>{' '}
-          This is a Phase 1 demo — no data is stored or transmitted to any server. All fields are for UI demonstration only.
+          Your review data is securely stored. Personal details are decoupled from responses before analytical processing.
         </p>
       </div>
 

@@ -4,6 +4,7 @@ import { BarChart3, ArrowRight, Star, TrendingUp, Users } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import CollegeCard from '../components/common/CollegeCard';
 import { searchColleges, getColleges } from '../services/mockDataService';
+import { useRole } from '../context/RoleContext';
 
 const stats = [
   { icon: Users,     value: '10,000+', label: 'Student Reviews'    },
@@ -13,6 +14,7 @@ const stats = [
 ];
 
 export default function HomePage() {
+  const { role } = useRole();
   const [allColleges, setAllColleges] = useState([]);
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState('');
@@ -66,20 +68,34 @@ export default function HomePage() {
 
           {/* CTAs */}
           <div className="flex items-center justify-center gap-4 mt-6 animate-fade-in-up delay-300">
-            <Link
-              to="/compare"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 text-sm font-medium hover:border-indigo-500/50 hover:text-white transition-all duration-200"
-            >
-              <BarChart3 className="w-4 h-4" />
-              Compare Colleges
-            </Link>
-            <Link
-              to="/submit-feedback"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-lg shadow-indigo-500/20"
-            >
-              Submit Your Review
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            {role === 'Admin' ? (
+              <Link
+                to="/submit-feedback"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white text-sm font-medium hover:from-amber-500 hover:to-orange-500 transition-all duration-200 shadow-lg shadow-amber-500/20"
+              >
+                View Platform Analytics
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/compare"
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 text-sm font-medium hover:border-indigo-500/50 hover:text-white transition-all duration-200 ${role === 'Prospect' ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20' : ''}`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Compare Colleges
+                </Link>
+                {role === 'Student' && (
+                  <Link
+                    to="/submit-feedback"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-lg shadow-indigo-500/20"
+                  >
+                    Submit Your Review
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </div>
 

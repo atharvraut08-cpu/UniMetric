@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, ArrowLeftRight } from 'lucide-react';
-import { getColleges } from '../services/mockDataService';
+import { getColleges, compareColleges } from '../services/mockDataService';
 import CollegeSelector from '../components/compare/CollegeSelector';
 import ComparisonTable from '../components/compare/ComparisonTable';
 import ComparisonBarChart from '../components/compare/ComparisonBarChart';
@@ -8,14 +8,33 @@ import DataDrivenInsightsSection from '../components/insights/DataDrivenInsights
 
 export default function ComparePage() {
   const [colleges, setColleges] = useState([]);
-  const [collegeA, setCollegeA] = useState(null);
-  const [collegeB, setCollegeB] = useState(null);
+  
+  // Basic objects for dropdowns
+  const [selectedA, setSelectedA] = useState(null);
+  const [selectedB, setSelectedB] = useState(null);
+  
+  // Detailed objects for charts
+  const [detailA, setDetailA] = useState(null);
+  const [detailB, setDetailB] = useState(null);
 
   useEffect(() => {
-    getColleges().then(setColleges);
+    getColleges().then(setColleges).catch(console.error);
   }, []);
 
-  const hasBoth = collegeA && collegeB;
+  useEffect(() => {
+    if (selectedA && selectedB) {
+      compareColleges(selectedA.id, selectedB.id).then((data) => {
+        // DRF endpoint returns a list of two college summaries
+        setDetailA(data.find(c => c.id === selectedA.id));
+        setDetailB(data.find(c => c.id === selectedB.id));
+      }).catch(console.error);
+    } else {
+      setDetailA(null);
+      setDetailB(null);
+    }
+  }, [selectedA, selectedB]);
+
+  const hasBoth = detailA && detailB;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
@@ -37,10 +56,10 @@ export default function ComparePage() {
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center">
           <CollegeSelector
             colleges={colleges}
-            selected={collegeA}
-            onChange={setCollegeA}
+            selected={selectedA}
+            onChange={setSelectedA}
             label="College A"
-            excludeId={collegeB?.id}
+            excludeId={selectedB?.id}
           />
 
           <div className="hidden sm:flex items-center justify-center">
@@ -51,10 +70,10 @@ export default function ComparePage() {
 
           <CollegeSelector
             colleges={colleges}
-            selected={collegeB}
-            onChange={setCollegeB}
+            selected={selectedB}
+            onChange={setSelectedB}
             label="College B"
-            excludeId={collegeA?.id}
+            excludeId={selectedA?.id}
           />
         </div>
       </div>
@@ -66,9 +85,9 @@ export default function ComparePage() {
             <BarChart3 className="w-10 h-10 text-slate-700" />
           </div>
           <p className="text-slate-400 font-medium">
-            {!collegeA && !collegeB
+            {!selectedA && !selectedB
               ? 'Select two colleges to start comparing.'
-              : `Select ${!collegeA ? 'College A' : 'College B'} to continue.`}
+              : `Select ${!selectedA ? 'College A' : 'College B'} to continue.`}
           </p>
           <p className="text-slate-600 text-sm mt-1">
             Metrics, charts, and delta indicators will appear here.
@@ -80,12 +99,12 @@ export default function ComparePage() {
       {hasBoth && (
         <div className="space-y-8 animate-fade-in-up">
           {/* Grouped bar chart */}
-          <ComparisonBarChart collegeA={collegeA} collegeB={collegeB} />
+          <ComparisonBarChart collegeA={detailA} collegeB={detailB} />
 
           {/* Side-by-side table */}
           <div>
             <h2 className="text-lg font-semibold text-white mb-4">Detailed Metrics</h2>
-            <ComparisonTable collegeA={collegeA} collegeB={collegeB} />
+            <ComparisonTable collegeA={detailA} collegeB={detailB} />
           </div>
 
           {/* ML Insights side-by-side */}
@@ -94,15 +113,15 @@ export default function ComparePage() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <p className="text-sm font-medium text-slate-400 border-b border-slate-800 pb-2">
-                  {collegeA.name}
+                  {detailA.name}
                 </p>
-                <DataDrivenInsightsSection collegeId={collegeA.id} collegeName={collegeA.name} />
+                <DataDrivenInsightsSection collegeId={detailA.id} collegeName={detailA.name} />
               </div>
               <div className="space-y-3">
                 <p className="text-sm font-medium text-slate-400 border-b border-slate-800 pb-2">
-                  {collegeB.name}
+                  {detailB.name}
                 </p>
-                <DataDrivenInsightsSection collegeId={collegeB.id} collegeName={collegeB.name} />
+                <DataDrivenInsightsSection collegeId={detailB.id} collegeName={detailB.name} />
               </div>
             </div>
           </div>
