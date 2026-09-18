@@ -3,8 +3,7 @@
  * Container component — fetches ML insights from the analytics API and
  * lays out the 4 insight widgets: KeyDrivers, Segments, Rules, Gauge.
  *
- * Placed BELOW existing Phase 1/2 charts on CollegeDashboardPage and ComparePage.
- * Does NOT modify any existing components.
+ * Updated for light Soft Neo-Brutalism theme with rounded-3xl cards.
  */
 import { useState, useEffect } from 'react';
 import { BrainCircuit, RefreshCw } from 'lucide-react';
@@ -17,11 +16,11 @@ import PredictiveRecommendGauge from './PredictiveRecommendGauge';
 // Skeleton loading card
 function SkeletonCard({ height = 'h-32' }) {
   return (
-    <div className={`glass-card p-5 ${height} animate-pulse`}>
-      <div className="h-3 w-1/3 bg-slate-700 rounded mb-3" />
-      <div className="h-2 w-full bg-slate-800 rounded mb-2" />
-      <div className="h-2 w-4/5 bg-slate-800 rounded mb-2" />
-      <div className="h-2 w-2/3 bg-slate-800 rounded" />
+    <div className={`bg-brand-paper rounded-3xl border border-brand-charcoal/10 p-5 ${height} animate-pulse shadow-soft`}>
+      <div className="h-3 w-1/3 bg-brand-cream rounded-xl mb-3" />
+      <div className="h-2 w-full bg-brand-cream rounded-xl mb-2" />
+      <div className="h-2 w-4/5 bg-brand-cream rounded-xl mb-2" />
+      <div className="h-2 w-2/3 bg-brand-cream rounded-xl" />
     </div>
   );
 }
@@ -49,7 +48,7 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-6 w-48 bg-slate-800 rounded animate-pulse" />
+        <div className="h-6 w-48 bg-brand-cream rounded-2xl animate-pulse" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <SkeletonCard height="h-52" />
           <SkeletonCard height="h-52" />
@@ -62,13 +61,13 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
 
   if (error || !insights) {
     return (
-      <div className="glass-card p-6 flex flex-col items-center justify-center text-center gap-3">
-        <BrainCircuit className="w-8 h-8 text-slate-600" />
-        <p className="text-slate-400 text-sm font-medium">
+      <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col items-center justify-center text-center gap-3">
+        <BrainCircuit className="w-8 h-8 text-brand-charcoal/40" />
+        <p className="text-brand-charcoal text-sm font-bold">
           Analytics not yet computed for this college.
         </p>
-        <p className="text-slate-600 text-xs">
-          Run <code className="text-indigo-400">python manage.py run_analytics_pipeline</code> to generate insights.
+        <p className="text-brand-charcoal/60 text-xs font-medium">
+          Run <code className="text-brand-coral font-semibold">python manage.py run_analytics_pipeline</code> to generate insights.
         </p>
       </div>
     );
@@ -92,16 +91,16 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
       {/* Section header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-            <BrainCircuit className="w-4 h-4 text-indigo-400" />
+          <div className="w-9 h-9 rounded-2xl bg-brand-charcoal text-brand-paper flex items-center justify-center shadow-soft">
+            <BrainCircuit className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white">Data-Driven Insights</h2>
-            <p className="text-xs text-slate-500">ML-powered analytics · Ridge, Naive Bayes, K-Means, Apriori</p>
+            <h2 className="text-base font-bold text-brand-charcoal">Data-Driven Insights</h2>
+            <p className="text-xs text-brand-charcoal/60 font-medium">ML-powered analytics · Ridge, Naive Bayes, K-Means, Apriori</p>
           </div>
         </div>
         {computedDate && (
-          <div className="flex items-center gap-1 text-xs text-slate-600">
+          <div className="flex items-center gap-1 text-xs text-brand-charcoal/50 font-medium">
             <RefreshCw className="w-3 h-3" />
             Updated {computedDate}
           </div>
@@ -109,15 +108,15 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
       </div>
 
       {/* Grid of 4 widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Widget 1: Key Drivers (Ridge Regression) */}
-        <div className="glass-card p-5">
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
           <div className="mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
               Key Rating Drivers
             </span>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
               Which categories most influence overall satisfaction (Ridge Regression)
             </p>
           </div>
@@ -125,12 +124,12 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
         </div>
 
         {/* Widget 2: Predictive Recommend Score (Naive Bayes) + Segment Distribution */}
-        <div className="glass-card p-5">
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
           <div className="mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
               Predictive Recommend Score
             </span>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
               Probability of recommendation (Gaussian Naive Bayes)
             </p>
           </div>
@@ -141,12 +140,12 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
         </div>
 
         {/* Widget 3: Student Segments (K-Means) */}
-        <div className="glass-card p-5">
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
           <div className="mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
               Student Segments
             </span>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
               Review clusters by satisfaction profile (K-Means, k=3)
             </p>
           </div>
@@ -154,12 +153,12 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
         </div>
 
         {/* Widget 4: Association Rules (Apriori) */}
-        <div className="glass-card p-5">
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
           <div className="mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-rose-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
               Co-Occurring Weaknesses
             </span>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
               Frequently associated low-rating patterns (Apriori rules)
             </p>
           </div>

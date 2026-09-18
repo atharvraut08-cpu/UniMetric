@@ -6,19 +6,20 @@ import {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-900/95 text-sm">
-        <p className="text-slate-400 mb-1">{label}</p>
-        <p className="font-semibold text-violet-300">{payload[0].value?.toFixed(1)} / 5</p>
+      <div className="px-3.5 py-2 rounded-2xl border border-brand-charcoal/15 bg-brand-paper shadow-soft text-sm">
+        <p className="text-brand-charcoal/70 font-medium mb-0.5">{label}</p>
+        <p className="font-bold text-brand-charcoal">{payload[0].value?.toFixed(1)} / 5</p>
       </div>
     );
   }
   return null;
 };
 
-const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa'];
+const COLORS = ['#191919', '#F4633E', '#F5C451'];
 
 /**
  * Bar chart breaking down infrastructure sub-scores: Labs, Wi-Fi, Hostel.
+ * Styled with pastel background (bg-brand-blue) and rounded-3xl.
  */
 export default function InfrastructureBreakdownChart({ infrastructure }) {
   const data = [
@@ -28,26 +29,26 @@ export default function InfrastructureBreakdownChart({ infrastructure }) {
   ];
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-4">Infrastructure Breakdown</h3>
+    <div className="bg-brand-blue rounded-3xl p-6 border border-brand-charcoal/10 shadow-soft flex flex-col justify-between">
+      <h3 className="text-brand-charcoal text-sm font-bold uppercase tracking-wider mb-2">Infrastructure Breakdown</h3>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} barCategoryGap="35%" margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.08)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(25, 25, 25, 0.1)" vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fill: '#94a3b8', fontSize: 12 }}
+            tick={{ fill: '#191919', fontSize: 12, fontWeight: 600 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             domain={[0, 5]}
-            tick={{ fill: '#475569', fontSize: 11 }}
+            tick={{ fill: '#191919', fontSize: 11, opacity: 0.6 }}
             axisLine={false}
             tickLine={false}
             tickCount={6}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(99,102,241,0.06)' }} />
-          <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(25, 25, 25, 0.05)' }} />
+          <Bar dataKey="score" radius={[8, 8, 0, 0]}>
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
@@ -56,11 +57,11 @@ export default function InfrastructureBreakdownChart({ infrastructure }) {
       </ResponsiveContainer>
 
       {/* Summary row */}
-      <div className="flex justify-around mt-4 pt-4 border-t border-slate-800">
+      <div className="flex justify-around mt-4 pt-4 border-t border-brand-charcoal/15">
         {data.map((d, i) => (
           <div key={d.name} className="text-center">
-            <div className="text-lg font-bold" style={{ color: COLORS[i] }}>{d.score.toFixed(1)}</div>
-            <div className="text-xs text-slate-500">{d.name}</div>
+            <div className="text-xl font-black text-brand-charcoal">{d.score.toFixed(1)}</div>
+            <div className="text-xs font-semibold text-brand-charcoal/70">{d.name}</div>
           </div>
         ))}
       </div>

@@ -1,17 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BarChart3, ArrowRight, Star, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, ArrowRight, Star, BookOpen, Users } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import CollegeCard from '../components/common/CollegeCard';
-import { searchColleges, getColleges } from '../services/mockDataService';
+import { searchColleges, getColleges, getPrograms } from '../services/mockDataService';
 import { useRole } from '../context/RoleContext';
-
-const stats = [
-  { icon: Users,     value: '10,000+', label: 'Student Reviews'    },
-  { icon: BarChart3, value: '500+',    label: 'Colleges Indexed'   },
-  { icon: Star,      value: '4.3',     label: 'Avg Platform Rating' },
-  { icon: TrendingUp,value: '98%',     label: 'Data Accuracy'      },
-];
 
 export default function HomePage() {
   const { role, isAuthenticated } = useRole();
@@ -25,30 +18,43 @@ export default function HomePage() {
       navigate('/compare');
     }
   };
+
   const [allColleges, setAllColleges] = useState([]);
   const [results, setResults] = useState([]);
+  const [programsCount, setProgramsCount] = useState(0);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    getColleges()
-      .then((data) => {
+    setLoadingStats(true);
+
+    Promise.all([
+      getColleges(),
+      getPrograms(),
+    ])
+      .then(([collegesData, programsData]) => {
         if (!isMounted) return;
-        const list = Array.isArray(data) ? data : (data?.results || []);
-        setAllColleges(list);
-        setResults(list);
+        const colList = Array.isArray(collegesData) ? collegesData : (collegesData?.results || []);
+        const progList = Array.isArray(programsData) ? programsData : (programsData?.results || []);
+
+        setAllColleges(colList);
+        setResults(colList);
+        setProgramsCount(progList.length);
       })
       .catch((err) => {
         if (!isMounted) return;
-        console.error('API Error [HomePage]: Failed to fetch colleges on mount:', err);
+        console.error('API Error [HomePage]: Failed to fetch colleges and platform stats:', err);
         setAllColleges([]);
         setResults([]);
+        setProgramsCount(0);
       })
       .finally(() => {
         if (isMounted) {
           setLoading(false);
+          setLoadingStats(false);
         }
       });
 
@@ -70,30 +76,65 @@ export default function HomePage() {
       });
   }, []);
 
-  return (
-    <div className="min-h-screen">
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden pt-20 pb-16 px-4">
-        {/* Background orbs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-indigo-600/10 blur-3xl" />
-          <div className="absolute top-20 right-1/4 w-80 h-80 rounded-full bg-violet-600/10 blur-3xl" />
-        </div>
+  // Compute live database aggregates for the 4 stat cards
+  const totalReviews = allColleges.reduce(
+    (sum, c) => sum + (c.totalReviews || c.unique_reviews || 0),
+    0
+  );
+  const totalColleges = allColleges.length;
+  const ratedColleges = allColleges.filter((c) => (c.overallRating || 0) > 0);
+  const avgRating = ratedColleges.length > 0
+    ? (ratedColleges.reduce((sum, c) => sum + c.overallRating, 0) / ratedColleges.length).toFixed(1)
+    : '0.0';
+  const totalPrograms = programsCount;
 
+  const statCards = [
+    {
+      icon: Users,
+      value: loadingStats ? '—' : totalReviews.toLocaleString(),
+      label: 'Student Reviews',
+      cardColor: 'bg-brand-yellow',
+    },
+    {
+      icon: BarChart3,
+      value: loadingStats ? '—' : totalColleges.toLocaleString(),
+      label: 'Colleges Indexed',
+      cardColor: 'bg-brand-purple',
+    },
+    {
+      icon: Star,
+      value: loadingStats ? '—' : avgRating,
+      label: 'Avg Platform Rating',
+      cardColor: 'bg-brand-blue',
+    },
+    {
+      icon: BookOpen,
+      value: loadingStats ? '—' : totalPrograms.toLocaleString(),
+      label: 'Programs Indexed',
+      cardColor: 'bg-brand-yellow',
+    },
+  ];
+
+  return (
+    <div className="min-h-full">
+      {/* ── Hero ── */}
+      <section className="relative overflow-hidden pt-8 pb-14 px-4">
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-medium mb-6 animate-fade-in">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-brand-charcoal/15 bg-brand-paper text-brand-charcoal text-xs font-semibold mb-6 animate-fade-in shadow-soft">
+            <span className="w-2 h-2 rounded-full bg-brand-coral animate-pulse" />
             Data-Driven College Analytics
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-extrabold text-white leading-tight tracking-tight mb-6 animate-fade-in-up">
+          <h1 className="text-4xl sm:text-6xl font-black text-brand-charcoal leading-tight tracking-tight mb-6 animate-fade-in-up">
             Find Your{' '}
-            <span className="gradient-text">Perfect College</span>
+            <span className="bg-brand-yellow px-3 py-0.5 rounded-3xl border border-brand-charcoal/15 inline-block shadow-soft">
+              Perfect College
+            </span>
             <br />
             with Real Insights
           </h1>
 
-          <p className="text-slate-400 text-lg leading-relaxed max-w-2xl mx-auto mb-10 animate-fade-in-up delay-100">
+          <p className="text-brand-charcoal/70 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-8 animate-fade-in-up delay-100 font-medium">
             Stop relying on word-of-mouth. UniMetric converts thousands of authentic student reviews into structured analytics —
             ratings, sentiment trends, and category-wise performance — so you can choose confidently.
           </p>
@@ -104,76 +145,69 @@ export default function HomePage() {
           </div>
 
           {/* CTAs */}
-          <div className="flex items-center justify-center gap-4 mt-6 animate-fade-in-up delay-300">
-            {role === 'Admin' ? (
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-6 animate-fade-in-up delay-300">
+            <a
+              href="/compare"
+              onClick={handleCompareClick}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-charcoal text-white text-sm font-semibold hover:bg-brand-charcoal/90 transition-all duration-200 shadow-soft"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Compare Colleges
+            </a>
+            {role === 'Student' && (
               <Link
                 to="/submit-feedback"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 text-white text-sm font-medium hover:from-amber-500 hover:to-orange-500 transition-all duration-200 shadow-lg shadow-amber-500/20"
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-coral text-white text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-soft"
               >
-                View Platform Analytics
+                Submit Your Review
                 <ArrowRight className="w-4 h-4" />
               </Link>
-            ) : (
-              <>
-                <a
-                  href="/compare"
-                  onClick={handleCompareClick}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 text-slate-300 text-sm font-medium hover:border-indigo-500/50 hover:text-white transition-all duration-200 ${role === 'Prospect' ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20' : ''}`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Compare Colleges
-                </a>
-                {role === 'Student' && (
-                  <Link
-                    to="/submit-feedback"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-medium hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-lg shadow-indigo-500/20"
-                  >
-                    Submit Your Review
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                )}
-              </>
             )}
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="max-w-4xl mx-auto mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 animate-fade-in-up delay-400">
-          {stats.map(({ icon: Icon, value, label }) => (
-            <div key={label} className="glass-card px-4 py-5 text-center">
-              <Icon className="w-5 h-5 text-indigo-400 mx-auto mb-2" />
-              <div className="text-xl font-bold text-white">{value}</div>
-              <div className="text-xs text-slate-500 mt-0.5">{label}</div>
+        {/* Stats row with authentic database metrics & rounded-3xl */}
+        <div className="max-w-4xl mx-auto mt-14 grid grid-cols-2 sm:grid-cols-4 gap-4 animate-fade-in-up delay-400">
+          {statCards.map(({ icon: Icon, value, label, cardColor }) => (
+            <div
+              key={label}
+              className={`${cardColor} rounded-3xl p-5 text-center border border-brand-charcoal/10 shadow-soft hover:-translate-y-1 transition-transform`}
+            >
+              <div className="w-10 h-10 rounded-2xl bg-brand-charcoal/10 flex items-center justify-center mx-auto mb-3">
+                <Icon className="w-5 h-5 text-brand-charcoal" />
+              </div>
+              <div className="text-2xl font-black text-brand-charcoal">{value}</div>
+              <div className="text-xs font-semibold text-brand-charcoal/70 mt-1 uppercase tracking-wider">{label}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Results ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-2xl font-bold text-brand-charcoal">
               {query ? `Results for "${query}"` : 'All Colleges'}
             </h2>
-            <p className="text-slate-500 text-sm mt-0.5">
+            <p className="text-brand-charcoal/60 text-sm mt-0.5 font-medium">
               {results.length} college{results.length !== 1 ? 's' : ''} found
             </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20 text-indigo-400">Loading colleges...</div>
+          <div className="flex justify-center py-20 text-brand-charcoal font-semibold text-lg">Loading colleges...</div>
         ) : results.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4">
-              <BarChart3 className="w-8 h-8 text-slate-600" />
+            <div className="w-16 h-16 rounded-3xl bg-brand-cream border border-brand-charcoal/10 flex items-center justify-center mb-4 text-brand-charcoal">
+              <BarChart3 className="w-8 h-8 text-brand-charcoal/40" />
             </div>
-            <p className="text-slate-400 font-medium">No colleges match your search.</p>
-            <p className="text-slate-600 text-sm mt-1">Try a different name, location, or program.</p>
+            <p className="text-brand-charcoal font-bold text-lg">No colleges match your search.</p>
+            <p className="text-brand-charcoal/60 text-sm mt-1 font-medium">Try a different name, location, or program.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {results.map((college, i) => (
               <div
                 key={college.id}

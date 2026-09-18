@@ -8,25 +8,26 @@ const TABS = [
 ];
 
 const dotColors = {
-  emerald: 'bg-emerald-400',
-  rose:    'bg-rose-400',
-  amber:   'bg-amber-400',
+  emerald: 'bg-emerald-500',
+  rose:    'bg-rose-500',
+  amber:   'bg-amber-500',
 };
 
 const activeTab = {
-  emerald: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10',
-  rose:    'border-rose-500/50 text-rose-400 bg-rose-500/10',
-  amber:   'border-amber-500/50 text-amber-400 bg-amber-500/10',
+  emerald: 'border-emerald-500/60 text-emerald-900 bg-emerald-100/70 shadow-soft',
+  rose:    'border-rose-500/60 text-rose-900 bg-rose-100/70 shadow-soft',
+  amber:   'border-amber-500/60 text-amber-900 bg-amber-100/70 shadow-soft',
 };
 
 const itemBorderColor = {
-  emerald: 'border-l-emerald-500/40',
-  rose:    'border-l-rose-500/40',
-  amber:   'border-l-amber-500/40',
+  emerald: 'border-l-emerald-500',
+  rose:    'border-l-rose-500',
+  amber:   'border-l-amber-500',
 };
 
 /**
  * Tabbed list of Positive feedback, Complaints, and Suggestions.
+ * Styled with light Soft Neo-Brutalism theme and rounded-3xl.
  */
 export default function FeedbackLists({ feedback }) {
   const [activeKey, setActiveKey] = useState('positive');
@@ -35,8 +36,8 @@ export default function FeedbackLists({ feedback }) {
   const items = feedback?.[activeKey] ?? [];
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-4">Student Feedback</h3>
+    <div className="bg-brand-paper rounded-3xl p-6 border border-brand-charcoal/10 shadow-soft">
+      <h3 className="text-brand-charcoal text-sm font-bold uppercase tracking-wider mb-4">Student Feedback</h3>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-5 flex-wrap">
@@ -44,15 +45,15 @@ export default function FeedbackLists({ feedback }) {
           <button
             key={key}
             onClick={() => setActiveKey(key)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-medium border transition-all duration-200 ${
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-sm font-semibold border transition-all duration-200 ${
               activeKey === key
                 ? activeTab[color]
-                : 'border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-300 bg-transparent'
+                : 'border-brand-charcoal/15 text-brand-charcoal/70 hover:border-brand-charcoal/30 hover:text-brand-charcoal hover:bg-brand-cream/80 bg-brand-cream/30'
             }`}
           >
             <Icon className="w-3.5 h-3.5" />
             {label}
-            <span className="ml-1 text-xs opacity-70">({feedback?.[key]?.length ?? 0})</span>
+            <span className="ml-1 text-xs opacity-75 font-normal">({feedback?.[key]?.length ?? 0})</span>
           </button>
         ))}
       </div>
@@ -60,16 +61,16 @@ export default function FeedbackLists({ feedback }) {
       {/* Items */}
       <ul className="space-y-3">
         {items.length === 0 && (
-          <li className="text-slate-500 text-sm py-4 text-center">No entries in this category.</li>
+          <li className="text-brand-charcoal/60 text-sm py-4 text-center font-medium">No entries in this category.</li>
         )}
         {items.map((item, idx) => (
           <li
             key={idx}
-            className={`flex items-start gap-3 pl-3 border-l-2 py-1 animate-fade-in ${itemBorderColor[activeTabConfig?.color]}`}
+            className={`flex items-start gap-3 pl-3 border-l-3 py-1.5 animate-fade-in ${itemBorderColor[activeTabConfig?.color]}`}
             style={{ animationDelay: `${idx * 60}ms` }}
           >
             <span className={`mt-2 w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColors[activeTabConfig?.color]}`} />
-            <p className="text-slate-300 text-sm leading-relaxed">{item}</p>
+            <p className="text-brand-charcoal text-sm leading-relaxed font-medium">{item}</p>
           </li>
         ))}
       </ul>

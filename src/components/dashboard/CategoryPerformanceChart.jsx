@@ -6,9 +6,9 @@ import {
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="px-3 py-2 rounded-lg border border-slate-700 bg-slate-900/95 text-sm">
-        <p className="text-slate-400">{payload[0].payload.subject}</p>
-        <p className="font-semibold text-indigo-300">{payload[0].value?.toFixed(1)} / 5</p>
+      <div className="px-3.5 py-2 rounded-2xl border border-brand-charcoal/15 bg-brand-paper shadow-soft text-sm">
+        <p className="text-brand-charcoal/70 font-medium">{payload[0].payload.subject}</p>
+        <p className="font-bold text-brand-charcoal">{payload[0].value?.toFixed(1)} / 5</p>
       </div>
     );
   }
@@ -17,6 +17,7 @@ const CustomTooltip = ({ active, payload }) => {
 
 /**
  * Radar chart for Teaching Quality, Infrastructure, Career/Placements.
+ * Styled with pastel background (bg-brand-purple) and rounded-3xl.
  */
 export default function CategoryPerformanceChart({ ratings }) {
   const infraAvg = ratings?.infrastructure?.overall ?? 0;
@@ -28,29 +29,29 @@ export default function CategoryPerformanceChart({ ratings }) {
   ];
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-slate-300 text-sm font-semibold uppercase tracking-wider mb-4">Category Performance</h3>
+    <div className="bg-brand-purple rounded-3xl p-6 border border-brand-charcoal/10 shadow-soft h-full flex flex-col justify-between">
+      <h3 className="text-brand-charcoal text-sm font-bold uppercase tracking-wider mb-2">Category Performance</h3>
       <ResponsiveContainer width="100%" height={280}>
         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-          <PolarGrid stroke="rgba(148,163,184,0.1)" />
+          <PolarGrid stroke="rgba(25, 25, 25, 0.15)" />
           <PolarAngleAxis
             dataKey="subject"
-            tick={{ fill: '#94a3b8', fontSize: 12 }}
+            tick={{ fill: '#191919', fontSize: 12, fontWeight: 600 }}
           />
           <PolarRadiusAxis
             angle={30}
             domain={[0, 5]}
-            tick={{ fill: '#475569', fontSize: 10 }}
+            tick={{ fill: '#191919', fontSize: 10, opacity: 0.6 }}
             tickCount={6}
           />
           <Radar
             name="Rating"
             dataKey="score"
-            stroke="#6366f1"
-            fill="#6366f1"
-            fillOpacity={0.25}
+            stroke="#191919"
+            fill="#191919"
+            fillOpacity={0.2}
             strokeWidth={2}
-            dot={{ r: 4, fill: '#6366f1', strokeWidth: 0 }}
+            dot={{ r: 4, fill: '#191919', strokeWidth: 0 }}
           />
           <Tooltip content={<CustomTooltip />} />
         </RadarChart>

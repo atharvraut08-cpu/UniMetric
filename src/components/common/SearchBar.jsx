@@ -26,18 +26,18 @@ export default function SearchBar({ onSearch, placeholder = 'Search colleges by 
 
   return (
     <div className={`relative ${className}`}>
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-charcoal/50 pointer-events-none" />
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-12 pr-10 py-3.5 rounded-xl border border-slate-700 bg-slate-800/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200"
+        className="w-full pl-12 pr-10 py-3.5 rounded-3xl border border-brand-charcoal/15 bg-brand-paper text-brand-charcoal placeholder-brand-charcoal/40 text-sm focus:outline-none focus:border-brand-charcoal focus:ring-2 focus:ring-brand-charcoal/10 shadow-soft transition-all duration-200"
       />
       {query && (
         <button
           onClick={handleClear}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-brand-charcoal/50 hover:text-brand-charcoal hover:bg-brand-cream transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
