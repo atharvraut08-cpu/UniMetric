@@ -4,7 +4,7 @@ import { Star, TrendingUp } from 'lucide-react';
  * Large overall rating stat card with animated circular ring.
  * Styled with pastel background (bg-brand-yellow) and rounded-3xl.
  */
-export default function OverallRatingStat({ rating, totalReviews, recommendationPercent }) {
+export default function OverallRatingStat({ rating, totalReviews, recommendationPercent, showDWM = false }) {
   const pct = ((rating - 1) / 4) * 100;   // 1–5 scale to 0–100%
   const circumference = 2 * Math.PI * 54;  // radius = 54
   const offset = circumference - (pct / 100) * circumference;
@@ -68,6 +68,12 @@ export default function OverallRatingStat({ rating, totalReviews, recommendation
           <div className="text-xs font-semibold text-brand-charcoal/60">Recommend</div>
         </div>
       </div>
+
+      {showDWM && (
+        <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+          Powered by: OLAP & Star Schema Rollups
+        </p>
+      )}
     </div>
   );
 }

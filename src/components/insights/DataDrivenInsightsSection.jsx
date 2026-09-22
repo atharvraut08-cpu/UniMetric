@@ -25,7 +25,7 @@ function SkeletonCard({ height = 'h-32' }) {
   );
 }
 
-export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
+export default function DataDrivenInsightsSection({ collegeId, collegeName, showDWM = false }) {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -111,58 +111,86 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Widget 1: Key Drivers (Ridge Regression) */}
-        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
-          <div className="mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-              Key Rating Drivers
-            </span>
-            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
-              Which categories most influence overall satisfaction (Ridge Regression)
-            </p>
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between">
+          <div>
+            <div className="mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
+                Key Rating Drivers
+              </span>
+              <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
+                Which categories most influence overall satisfaction (Ridge Regression)
+              </p>
+            </div>
+            <KeyDriversChart keyDrivers={keyDrivers} />
           </div>
-          <KeyDriversChart keyDrivers={keyDrivers} />
+          {showDWM && (
+            <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+              Powered by: Ridge Regression
+            </p>
+          )}
         </div>
 
         {/* Widget 2: Predictive Recommend Score (Naive Bayes) + Segment Distribution */}
-        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
-          <div className="mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-              Predictive Recommend Score
-            </span>
-            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
-              Probability of recommendation (Gaussian Naive Bayes)
-            </p>
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between">
+          <div>
+            <div className="mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
+                Predictive Recommend Score
+              </span>
+              <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
+                Probability of recommendation (Gaussian Naive Bayes)
+              </p>
+            </div>
+            <PredictiveRecommendGauge
+              score={predictiveRecommendScore}
+              accuracy={classifierAccuracy}
+            />
           </div>
-          <PredictiveRecommendGauge
-            score={predictiveRecommendScore}
-            accuracy={classifierAccuracy}
-          />
+          {showDWM && (
+            <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+              Powered by: Gaussian Naive Bayes
+            </p>
+          )}
         </div>
 
         {/* Widget 3: Student Segments (K-Means) */}
-        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
-          <div className="mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-              Student Segments
-            </span>
-            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
-              Review clusters by satisfaction profile (K-Means, k=3)
-            </p>
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between">
+          <div>
+            <div className="mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
+                Student Segments
+              </span>
+              <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
+                Review clusters by satisfaction profile (K-Means, k=3)
+              </p>
+            </div>
+            <SegmentBadgeList clusterSummary={clusterSummary} />
           </div>
-          <SegmentBadgeList clusterSummary={clusterSummary} />
+          {showDWM && (
+            <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+              Powered by: K-Means Clustering (k=3)
+            </p>
+          )}
         </div>
 
         {/* Widget 4: Association Rules (Apriori) */}
-        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6">
-          <div className="mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-              Co-Occurring Weaknesses
-            </span>
-            <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
-              Frequently associated low-rating patterns (Apriori rules)
-            </p>
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between">
+          <div>
+            <div className="mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
+                Co-Occurring Weaknesses
+              </span>
+              <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
+                Frequently associated low-rating patterns (Apriori rules)
+              </p>
+            </div>
+            <AssociationRuleChips associationRules={associationRules} />
           </div>
-          <AssociationRuleChips associationRules={associationRules} />
+          {showDWM && (
+            <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+              Powered by: Apriori Association Rule Mining
+            </p>
+          )}
         </div>
 
       </div>

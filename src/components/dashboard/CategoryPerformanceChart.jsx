@@ -19,7 +19,7 @@ const CustomTooltip = ({ active, payload }) => {
  * Radar chart for Teaching Quality, Infrastructure, Career/Placements.
  * Styled with pastel background (bg-brand-purple) and rounded-3xl.
  */
-export default function CategoryPerformanceChart({ ratings }) {
+export default function CategoryPerformanceChart({ ratings, showDWM = false }) {
   const infraAvg = ratings?.infrastructure?.overall ?? 0;
 
   const data = [
@@ -56,6 +56,11 @@ export default function CategoryPerformanceChart({ ratings }) {
           <Tooltip content={<CustomTooltip />} />
         </RadarChart>
       </ResponsiveContainer>
+      {showDWM && (
+        <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+          Powered by: OLAP & Star Schema Rollups
+        </p>
+      )}
     </div>
   );
 }

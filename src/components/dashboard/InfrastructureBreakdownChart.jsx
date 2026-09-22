@@ -21,7 +21,7 @@ const COLORS = ['#191919', '#F4633E', '#F5C451'];
  * Bar chart breaking down infrastructure sub-scores: Labs, Wi-Fi, Hostel.
  * Styled with pastel background (bg-brand-blue) and rounded-3xl.
  */
-export default function InfrastructureBreakdownChart({ infrastructure }) {
+export default function InfrastructureBreakdownChart({ infrastructure, showDWM = false }) {
   const data = [
     { name: 'Labs',   score: infrastructure?.labs   ?? 0 },
     { name: 'Wi-Fi',  score: infrastructure?.wifi   ?? 0 },
@@ -65,6 +65,12 @@ export default function InfrastructureBreakdownChart({ infrastructure }) {
           </div>
         ))}
       </div>
+
+      {showDWM && (
+        <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+          Powered by: OLAP & Star Schema Rollups
+        </p>
+      )}
     </div>
   );
 }

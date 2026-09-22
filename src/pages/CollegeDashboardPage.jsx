@@ -23,6 +23,7 @@ export default function CollegeDashboardPage() {
   const [college, setCollege] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showDWM, setShowDWM] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -77,6 +78,12 @@ export default function CollegeDashboardPage() {
               <span className={`text-xs px-3 py-1 rounded-full font-semibold ${typeColors[college.type] || typeColors.Private}`}>
                 {college.type}
               </span>
+              <button
+                onClick={() => setShowDWM(!showDWM)}
+                className="text-xs px-3 py-1 bg-brand-charcoal text-brand-paper rounded-full hover:opacity-90 transition-opacity"
+              >
+                {showDWM ? 'Hide' : 'Show'} DWM Concepts
+              </button>
             </div>
             <h1 className="text-2xl sm:text-4xl font-black text-brand-charcoal mb-2">{college.name}</h1>
             <div className="flex flex-wrap items-center gap-4 text-brand-charcoal/70 text-sm font-medium">
@@ -115,17 +122,18 @@ export default function CollegeDashboardPage() {
             rating={college.overallRating}
             totalReviews={college.totalReviews}
             recommendationPercent={college.recommendationPercent}
+            showDWM={showDWM}
           />
         </div>
         <div className="md:col-span-2 flex flex-col">
-          <CategoryPerformanceChart ratings={college.ratings} />
+          <CategoryPerformanceChart ratings={college.ratings} showDWM={showDWM} />
         </div>
       </div>
 
       {/* Row 2: Infrastructure (bg-brand-blue) + Sentiment */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up delay-200 items-stretch">
-        <InfrastructureBreakdownChart infrastructure={college.ratings.infrastructure} />
-        <SentimentPieChart reviews={reviews} />
+        <InfrastructureBreakdownChart infrastructure={college.ratings.infrastructure} showDWM={showDWM} />
+        <SentimentPieChart reviews={reviews} showDWM={showDWM} />
       </div>
 
       {/* Row 3: Feedback Lists */}
@@ -135,7 +143,7 @@ export default function CollegeDashboardPage() {
 
       {/* ── Row 4: Data-Driven ML Insights ── */}
       <div className="animate-fade-in-up delay-400">
-        <DataDrivenInsightsSection collegeId={id} collegeName={college.name} />
+        <DataDrivenInsightsSection collegeId={id} collegeName={college.name} showDWM={showDWM} />
       </div>
     </div>
   );

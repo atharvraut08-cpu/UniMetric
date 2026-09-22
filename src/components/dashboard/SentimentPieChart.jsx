@@ -29,7 +29,7 @@ const CustomLegend = ({ payload }) => (
  * Donut / Pie chart showing sentiment distribution derived from reviews array.
  * Styled with light Soft Neo-Brutalism theme and rounded-3xl.
  */
-export default function SentimentPieChart({ reviews }) {
+export default function SentimentPieChart({ reviews, showDWM = false }) {
   const data = getSentimentPieData(reviews);
 
   if (!data.length) {
@@ -73,6 +73,12 @@ export default function SentimentPieChart({ reviews }) {
           </div>
         ))}
       </div>
+
+      {showDWM && (
+        <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
+          Powered by: OLAP & Star Schema Rollups
+        </p>
+      )}
     </div>
   );
 }
