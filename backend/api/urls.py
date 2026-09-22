@@ -6,7 +6,8 @@ from .views import (
     CollegeCompareView, 
     CollegeReviewsView, 
     ProgramViewSet, 
-    SubmitReviewView
+    SubmitReviewView,
+    StudentRegisterView
 )
 
 router = DefaultRouter()
@@ -19,6 +20,7 @@ urlpatterns = [
     path('colleges/<int:id>/summary/', CollegeSummaryView.as_view(), name='college-summary'),
     path('colleges/<int:id>/reviews/', CollegeReviewsView.as_view(), name='college-reviews'),
     path('reviews/', SubmitReviewView.as_view(), name='submit-review'),
+    path('students/register/', StudentRegisterView.as_view(), name='student-register'),
 
     # API Router for basic list endpoints
     path('', include(router.urls)),

@@ -22,13 +22,25 @@ def train_regression(df_wide: pd.DataFrame, category_columns: list) -> tuple[dic
       - model: fitted Ridge instance
       - r2: R² score on test split
     """
-    # Fill any NaN scores with the column mean
-    df = df_wide[category_columns + ["overall_rating"]].dropna()
+    # Filter available category columns
+    cols = [c for c in category_columns if c in df_wide.columns]
+    if not cols or "overall_rating" not in df_wide.columns:
+        return {}, None, 0.0
+
+    df = df_wide[cols + ["overall_rating"]].copy()
+    df = df.dropna(subset=["overall_rating"])
+
+    # Impute missing category scores (e.g. day scholars missing Hostel) with column mean
+    for col in cols:
+        mean_val = df[col].mean()
+        if pd.isna(mean_val):
+            mean_val = 3.0
+        df[col] = df[col].fillna(mean_val)
 
     if len(df) < MIN_SAMPLES:
         return {}, None, 0.0
 
-    X = df[category_columns].values
+    X = df[cols].values
     y = df["overall_rating"].values
 
     scaler = StandardScaler()

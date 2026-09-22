@@ -15,7 +15,12 @@ const formatUserData = (sbUser) => {
     name: meta.full_name || sbUser.email?.split('@')[0] || 'User',
     role: meta.role || 'Student',
     college_id: meta.college_id || null,
+    program_id: meta.program_id || null,
+    admission_date: meta.admission_date || null,
     year_of_study: meta.year_of_study || null,
+    gender: meta.gender || null,
+    age_group: meta.age_group || meta.ageGroup || null,
+    state_of_domicile: meta.state_of_domicile || meta.stateOfDomicile || null,
     user_metadata: meta,
   };
 };
@@ -102,12 +107,35 @@ export function RoleProvider({ children }) {
   /**
    * Sign Up with Email, Password, Name, and Role
    */
-  const signUp = async ({ email, password, name, role: userRole, college_id, year_of_study, ...extraData }) => {
+  const signUp = async ({
+    email,
+    password,
+    name,
+    role: userRole,
+    college_id,
+    program_id,
+    admission_date,
+    year_of_study,
+    gender,
+    ageGroup,
+    age_group,
+    stateOfDomicile,
+    state_of_domicile,
+    ...extraData
+  }) => {
+    const finalAgeGroup = ageGroup || age_group || '';
+    const finalState = stateOfDomicile || state_of_domicile || '';
+
     const metaData = {
       full_name: name,
       role: userRole || 'Student',
       ...(college_id ? { college_id } : {}),
+      ...(program_id ? { program_id } : {}),
+      ...(admission_date ? { admission_date } : {}),
       ...(year_of_study ? { year_of_study } : {}),
+      ...(gender ? { gender } : {}),
+      ...(finalAgeGroup ? { age_group: finalAgeGroup, ageGroup: finalAgeGroup } : {}),
+      ...(finalState ? { state_of_domicile: finalState, stateOfDomicile: finalState } : {}),
       ...extraData,
     };
 
@@ -119,7 +147,12 @@ export function RoleProvider({ children }) {
         name,
         role: userRole || 'Student',
         college_id: college_id || null,
+        program_id: program_id || null,
+        admission_date: admission_date || null,
         year_of_study: year_of_study || null,
+        gender: gender || null,
+        age_group: finalAgeGroup || null,
+        state_of_domicile: finalState || null,
         user_metadata: metaData,
       };
       setUser(mockUser);

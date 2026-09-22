@@ -23,8 +23,8 @@ MIN_SAMPLES_KMEANS = K_MEANS_K  # need at least k samples
 
 
 # Heuristic keywords to classify cluster labels
-INFRA_KEYWORDS = ["lab", "wi-fi", "wifi", "hostel", "infra", "internet", "facility"]
-TEACHING_KEYWORDS = ["teaching", "course", "academic", "faculty", "class"]
+INFRA_KEYWORDS = ["lab", "wi-fi", "wifi", "hostel", "infra", "internet", "facility", "canteen", "amenities", "cleanliness", "equipment"]
+TEACHING_KEYWORDS = ["teaching", "course", "academic", "faculty", "class", "curriculum", "library"]
 
 
 def _matches_keywords(col_name: str, keywords: list) -> bool:
@@ -87,7 +87,17 @@ def run_kmeans(df_wide: pd.DataFrame, category_columns: list) -> tuple[list, dic
       - labels: list of cluster ints, one per row in df_wide
       - label_map: {cluster_int: descriptive_string}
     """
-    df = df_wide[category_columns].dropna()
+    cols = [c for c in category_columns if c in df_wide.columns]
+    if not cols:
+        return [], {}
+
+    df = df_wide[cols].copy()
+    for col in cols:
+        mean_val = df[col].mean()
+        if pd.isna(mean_val):
+            mean_val = 3.0
+        df[col] = df[col].fillna(mean_val)
+
     if len(df) < MIN_SAMPLES_KMEANS:
         return [], {}
 
@@ -98,7 +108,7 @@ def run_kmeans(df_wide: pd.DataFrame, category_columns: list) -> tuple[list, dic
     model = KMeans(n_clusters=k, random_state=42, n_init=10)
     raw_labels = model.fit_predict(X)
 
-    label_map = _label_clusters(model, category_columns)
+    label_map = _label_clusters(model, cols)
     return raw_labels.tolist(), label_map
 
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   PlusCircle, Shield, Lock, ShieldCheck, CheckCircle2,
-  ArrowRight, GraduationCap,
+  ArrowRight,
 } from 'lucide-react';
 import FeedbackForm from '../components/feedback/FeedbackForm';
 import { useRole } from '../context/RoleContext';
@@ -47,6 +47,8 @@ function StudentView() {
   const { user, session } = useRole();
   const collegeId = user?.college_id || user?.user_metadata?.college_id || session?.user?.user_metadata?.college_id;
   const yearOfStudy = user?.year_of_study || user?.user_metadata?.year_of_study || session?.user?.user_metadata?.year_of_study;
+  const admissionDate = user?.admission_date || user?.user_metadata?.admission_date || session?.user?.user_metadata?.admission_date;
+  const programId = user?.program_id || user?.user_metadata?.program_id || session?.user?.user_metadata?.program_id;
   const userId = user?.id || session?.user?.id;
 
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -60,20 +62,15 @@ function StudentView() {
       return;
     }
 
-    // Check localStorage cache first for immediate responsiveness
-    const localSubmitted = localStorage.getItem(`submitted_review_${userId}`);
-    if (localSubmitted === 'true') {
-      setHasSubmitted(true);
-    }
-
-    // Check backend API for authentic DB review record
-    checkUserReview(userId, session?.access_token)
+    // Check backend API for authentic DB review record scoped to the current academic year
+    checkUserReview(userId, session?.access_token, admissionDate)
       .then((res) => {
         if (!isMounted) return;
         if (res.hasSubmitted) {
           setHasSubmitted(true);
           setSubmissionDetails(res);
-          localStorage.setItem(`submitted_review_${userId}`, 'true');
+        } else {
+          setHasSubmitted(false);
         }
       })
       .catch((err) => {
@@ -88,7 +85,7 @@ function StudentView() {
     return () => {
       isMounted = false;
     };
-  }, [userId, session?.access_token]);
+  }, [userId, session?.access_token, admissionDate]);
 
   // Loading state while verifying eligibility
   if (checkingSubmission) {
@@ -103,6 +100,7 @@ function StudentView() {
   // Friendly Pastel "Already Submitted" Screen
   if (hasSubmitted) {
     const targetCollegeId = collegeId || submissionDetails?.college_id;
+    const submittedYear = submissionDetails?.year_of_study || yearOfStudy;
 
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 text-center animate-fade-in-up">
@@ -120,7 +118,7 @@ function StudentView() {
               Review Already Submitted
             </h1>
             <p className="text-brand-charcoal/70 text-sm sm:text-base leading-relaxed max-w-md mx-auto font-medium">
-              Thank you! You have already submitted a review for your college. To maintain data integrity, students are limited to one review.
+              Thank you! You have already submitted a review for Year {submittedYear || 'current'} of your program. To maintain data integrity, students are limited to one review per academic year.
             </p>
           </div>
 
@@ -190,6 +188,8 @@ function StudentView() {
         <FeedbackForm
           lockedCollegeId={collegeId}
           lockedYear={yearOfStudy}
+          lockedProgramId={programId}
+          lockedAdmissionDate={admissionDate}
           onSubmitted={() => setHasSubmitted(true)}
         />
       </div>

@@ -5,8 +5,53 @@ from django.db.models import Avg, Count, Q, F, ExpressionWrapper
 from django.db.models.functions import Cast
 from django.db.models import FloatField, IntegerField
 from .models import College, Program, StudentProfile, DateDim, FeedbackCategory, FeedbackFact
-from .serializers import CollegeListSerializer, ProgramSerializer, ReviewSubmitSerializer
-from datetime import date
+from .serializers import (
+    CollegeListSerializer, 
+    ProgramSerializer, 
+    ReviewSubmitSerializer, 
+    StudentRegistrationSerializer
+)
+from datetime import date, datetime
+from django.utils import timezone
+
+def calculate_year_of_study(admission_date, reference_date=None):
+    """
+    Calculate current Year of Study ("1", "2", "3", "4") based on admission_date and reference_date.
+    - 0 <= elapsed months < 12 -> "1"
+    - 12 <= elapsed months < 24 -> "2"
+    - 24 <= elapsed months < 36 -> "3"
+    - elapsed months >= 36 -> "4"
+    """
+    if not admission_date:
+        return "1"
+
+    if reference_date is None:
+        reference_date = timezone.now().date()
+    elif isinstance(reference_date, datetime):
+        reference_date = reference_date.date()
+
+    if isinstance(admission_date, str):
+        raw = admission_date.strip()
+        try:
+            if len(raw) == 7:  # YYYY-MM format from <input type="month" />
+                parsed = datetime.strptime(raw, "%Y-%m").date()
+            else:
+                parsed = datetime.strptime(raw[:10], "%Y-%m-%d").date()
+        except Exception:
+            return "1"
+    elif isinstance(admission_date, datetime):
+        parsed = admission_date.date()
+    elif isinstance(admission_date, date):
+        parsed = admission_date
+    else:
+        return "1"
+
+    months_diff = (reference_date.year - parsed.year) * 12 + (reference_date.month - parsed.month)
+    if months_diff < 0:
+        return "1"
+
+    calc_year = (months_diff // 12) + 1
+    return str(min(max(calc_year, 1), 4))
 
 class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CollegeListSerializer
@@ -94,12 +139,19 @@ class CollegeSummaryView(views.APIView):
             "ratings": {
                 "teachingQuality": cat_dict.get('Teaching Quality', 0),
                 "infrastructure": {
-                    "labs": cat_dict.get('Labs', 0),
-                    "wifi": cat_dict.get('Wi-Fi', 0),
-                    "hostel": cat_dict.get('Hostel', 0),
-                    "overall": round((cat_dict.get('Labs', 0) + cat_dict.get('Wi-Fi', 0) + cat_dict.get('Hostel', 0)) / 3, 2)
+                    "labs": cat_dict.get('Infra — Quality of Equipment') or cat_dict.get('Labs', 0),
+                    "wifi": cat_dict.get('Wi-Fi & Connectivity') or cat_dict.get('Wi-Fi', 0),
+                    "hostel": cat_dict.get('Hostel & Accommodation') or cat_dict.get('Hostel', 0),
+                    "overall": round(
+                        (
+                            (cat_dict.get('Infra — Quality of Equipment') or cat_dict.get('Labs', 0)) +
+                            (cat_dict.get('Wi-Fi & Connectivity') or cat_dict.get('Wi-Fi', 0)) +
+                            (cat_dict.get('Hostel & Accommodation') or cat_dict.get('Hostel', 0))
+                        ) / 3, 2
+                    )
                 },
-                "careerPlacements": cat_dict.get('Career Placements', 0)
+                "careerPlacements": cat_dict.get('Placements & Opportunities') or cat_dict.get('Career Placements', 0),
+                "detailed": cat_dict
             },
             "sentimentDistribution": {
                 "positive": positive,
@@ -126,7 +178,8 @@ class CollegeSummaryView(views.APIView):
             "ratings": {
                 "teachingQuality": 0,
                 "infrastructure": { "labs": 0, "wifi": 0, "hostel": 0, "overall": 0 },
-                "careerPlacements": 0
+                "careerPlacements": 0,
+                "detailed": {}
             },
             "sentimentDistribution": { "positive": 0, "neutral": 0, "negative": 0 },
             "feedback": { "positive": [], "complaints": [], "suggestions": [] }
@@ -170,11 +223,17 @@ class CollegeReviewsView(views.APIView):
             for f in facts:
                 cat_name = f.category.category_name
                 # Map back to frontend expected keys
-                if cat_name == 'Teaching Quality': ratings['teachingQuality'] = f.score
-                elif cat_name == 'Labs': ratings['labs'] = f.score
-                elif cat_name == 'Wi-Fi': ratings['wifi'] = f.score
-                elif cat_name == 'Hostel': ratings['hostel'] = f.score
-                elif cat_name == 'Career Placements': ratings['careerPlacements'] = f.score
+                if cat_name in ('Teaching Quality',):
+                    ratings['teachingQuality'] = f.score
+                elif cat_name in ('Infra — Quality of Equipment', 'Labs'):
+                    ratings['labs'] = f.score
+                elif cat_name in ('Wi-Fi & Connectivity', 'Wi-Fi'):
+                    ratings['wifi'] = f.score
+                elif cat_name in ('Hostel & Accommodation', 'Hostel'):
+                    ratings['hostel'] = f.score
+                elif cat_name in ('Placements & Opportunities', 'Career Placements'):
+                    ratings['careerPlacements'] = f.score
+                ratings[cat_name] = f.score
 
             results.append({
                 "id": str(s.submission_id),
@@ -208,17 +267,36 @@ class SubmitReviewView(views.APIView):
         if not user_id:
             return Response({"has_submitted": False, "hasSubmitted": False, "count": 0})
 
+        # Fetch student profile to get admission_date or year_of_study
+        profile = StudentProfile.objects.filter(user_id=user_id).order_by('-id').first()
+
+        # Check admission_date from query params or student profile
+        admission_date_raw = request.query_params.get('admission_date')
+        if not admission_date_raw and profile and profile.admission_date:
+            admission_date_raw = profile.admission_date
+
+        if admission_date_raw:
+            current_year = calculate_year_of_study(admission_date_raw)
+        elif profile and profile.year_of_study:
+            current_year = profile.year_of_study
+        else:
+            current_year = request.query_params.get('year_of_study') or request.query_params.get('student_year') or "1"
+
+        # Check if the user has submitted for this specific calculated year of study
         facts = FeedbackFact.objects.filter(
             Q(user_id=user_id) | Q(student_profile__user_id=user_id)
         )
-        has_submitted = facts.exists()
-        first_fact = facts.first() if has_submitted else None
+        facts_for_year = facts.filter(student_profile__year_of_study=current_year)
+        has_submitted = facts_for_year.exists()
+        first_fact = facts_for_year.first() if has_submitted else facts.first()
 
         return Response({
             "has_submitted": has_submitted,
             "hasSubmitted": has_submitted,
-            "college_id": first_fact.college_id if first_fact else None,
-            "college_name": first_fact.college.name if first_fact and first_fact.college else None,
+            "current_year_of_study": current_year,
+            "currentYearOfStudy": current_year,
+            "college_id": first_fact.college_id if first_fact else (profile.program.college_id if profile and profile.program else None),
+            "college_name": first_fact.college.name if first_fact and first_fact.college else (profile.program.college.name if profile and profile.program and profile.program.college else None),
             "submission_id": str(first_fact.submission_id) if first_fact else None,
             "count": 1 if has_submitted else 0,
         })
@@ -242,20 +320,47 @@ class SubmitReviewView(views.APIView):
 
             uid = data.get('userId') or data.get('user_id') or ""
 
-            # Check duplicate submission if uid is provided
+            # Check existing profile for admission_date or parse from payload
+            profile = StudentProfile.objects.filter(user_id=uid).order_by('-id').first() if uid else None
+            
+            admission_raw = data.get('admissionDate') or (profile.admission_date if profile else None)
+            if admission_raw:
+                calculated_year = calculate_year_of_study(admission_raw)
+            else:
+                calculated_year = data.get('studentYear') or (profile.year_of_study if profile else "1")
+
+            # Parse admission_date into a valid Date object if present
+            parsed_admission_date = None
+            if admission_raw:
+                try:
+                    raw_str = str(admission_raw).strip()
+                    if len(raw_str) == 7:
+                        parsed_admission_date = datetime.strptime(raw_str, "%Y-%m").date()
+                    else:
+                        parsed_admission_date = datetime.strptime(raw_str[:10], "%Y-%m-%d").date()
+                except Exception:
+                    parsed_admission_date = None
+
+            # Check duplicate submission for THIS specific calculated year of study
             if uid:
                 already_exists = FeedbackFact.objects.filter(
-                    Q(user_id=uid) | Q(student_profile__user_id=uid)
+                    Q(user_id=uid) | Q(student_profile__user_id=uid),
+                    student_profile__year_of_study=calculated_year
                 ).exists()
                 if already_exists:
                     return Response({
-                        "error": "You have already submitted a review. Students are limited to one review."
+                        "error": f"You have already submitted a review for Year {calculated_year}. Students are limited to one review per academic year."
                     }, status=400)
 
             # Create Student Profile
             student_profile = StudentProfile.objects.create(
-                year_of_study=data['studentYear'],
-                user_id=uid
+                year_of_study=calculated_year,
+                user_id=uid,
+                program=program or (profile.program if profile else None),
+                admission_date=parsed_admission_date or (profile.admission_date if profile else None),
+                gender=data.get('gender') or (profile.gender if profile else ""),
+                age_group=data.get('age_group') or data.get('ageGroup') or (profile.age_group if profile else ""),
+                state_of_domicile=data.get('state_of_domicile') or data.get('stateOfDomicile') or (profile.state_of_domicile if profile else "")
             )
 
             # Get or Create DateDim
@@ -270,26 +375,56 @@ class SubmitReviewView(views.APIView):
                 }
             )
 
-            # Define category mappings
+            # Define category mappings (supporting 11 categories and legacy aliases)
             cat_map = {
+                # Legacy keys
                 'teachingQuality': 'Teaching Quality',
-                'labs': 'Labs',
-                'wifi': 'Wi-Fi',
-                'hostel': 'Hostel',
-                'careerPlacements': 'Career Placements'
+                'labs': 'Infra — Quality of Equipment',
+                'wifi': 'Wi-Fi & Connectivity',
+                'hostel': 'Hostel & Accommodation',
+                'careerPlacements': 'Placements & Opportunities',
+                # Exact category names
+                'Teaching Quality': 'Teaching Quality',
+                'Curriculum Relevance': 'Curriculum Relevance',
+                'Library & Resources': 'Library & Resources',
+                'Infra — Quality of Equipment': 'Infra — Quality of Equipment',
+                'Infra — Cleanliness': 'Infra — Cleanliness',
+                'Infra — Basic Amenities': 'Infra — Basic Amenities',
+                'Wi-Fi & Connectivity': 'Wi-Fi & Connectivity',
+                'Canteen & Food Quality': 'Canteen & Food Quality',
+                'Hostel & Accommodation': 'Hostel & Accommodation',
+                'Placements & Opportunities': 'Placements & Opportunities',
+                'Extracurriculars & Culture': 'Extracurriculars & Culture',
+                # CamelCase aliases
+                'curriculumRelevance': 'Curriculum Relevance',
+                'libraryResources': 'Library & Resources',
+                'infraEquipment': 'Infra — Quality of Equipment',
+                'infraCleanliness': 'Infra — Cleanliness',
+                'infraAmenities': 'Infra — Basic Amenities',
+                'wifiConnectivity': 'Wi-Fi & Connectivity',
+                'canteenFoodQuality': 'Canteen & Food Quality',
+                'hostelAccommodation': 'Hostel & Accommodation',
+                'placementsOpportunities': 'Placements & Opportunities',
+                'extracurricularsCulture': 'Extracurriculars & Culture',
             }
+
+            def get_category_group(cname):
+                if cname in ['Teaching Quality', 'Curriculum Relevance', 'Library & Resources']:
+                    return 'TEACHING'
+                elif cname in ['Placements & Opportunities', 'Extracurriculars & Culture']:
+                    return 'CAREER'
+                return 'INFRASTRUCTURE'
 
             import uuid
             submission_id = uuid.uuid4()
 
-            # Create 5 FeedbackFact rows
+            # Create FeedbackFact rows for all submitted ratings
             for key, score in data['ratings'].items():
-                cat_name = cat_map.get(key)
-                if not cat_name: continue
+                cat_name = cat_map.get(key) or key
                 
                 category, _ = FeedbackCategory.objects.get_or_create(
                     category_name=cat_name,
-                    defaults={'category_group': 'INFRASTRUCTURE'} # simplified fallback
+                    defaults={'category_group': get_category_group(cat_name)}
                 )
                 
                 FeedbackFact.objects.create(
@@ -302,11 +437,57 @@ class SubmitReviewView(views.APIView):
                     submission_id=submission_id,
                     user_id=uid,
                     would_recommend=data['wouldRecommend'],
-                    sentiment="POSITIVE", # Hardcoded or basic inference since ML is out of scope
+                    sentiment="POSITIVE", # Hardcoded or basic inference
                     positive_feedback=data['positiveFeedback'],
                     complaints=data['complaints'],
                     suggestions=data['suggestions']
                 )
 
-            return Response({"status": "success", "submission_id": str(submission_id)}, status=201)
+            return Response({
+                "status": "success", 
+                "submission_id": str(submission_id),
+                "year_of_study": calculated_year
+            }, status=201)
         return Response(serializer.errors, status=400)
+
+class StudentRegisterView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = StudentRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            uid = serializer.validated_data.get('user_id')
+            admission_date = serializer.validated_data.get('admission_date')
+            program = serializer.validated_data.get('program')
+            gender = serializer.validated_data.get('gender', '')
+            age_group = serializer.validated_data.get('age_group', '')
+            state_of_domicile = serializer.validated_data.get('state_of_domicile', '')
+            
+            year_of_study = calculate_year_of_study(admission_date) if admission_date else serializer.validated_data.get('year_of_study', '1')
+
+            if uid:
+                profile, _ = StudentProfile.objects.update_or_create(
+                    user_id=uid,
+                    defaults={
+                        'program': program,
+                        'admission_date': admission_date,
+                        'year_of_study': year_of_study,
+                        'gender': gender,
+                        'age_group': age_group,
+                        'state_of_domicile': state_of_domicile,
+                    }
+                )
+            else:
+                profile = StudentProfile.objects.create(
+                    user_id=uid,
+                    program=program,
+                    admission_date=admission_date,
+                    year_of_study=year_of_study,
+                    gender=gender,
+                    age_group=age_group,
+                    state_of_domicile=state_of_domicile,
+                )
+
+            return Response(StudentRegistrationSerializer(profile).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

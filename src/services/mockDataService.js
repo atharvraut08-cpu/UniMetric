@@ -24,12 +24,15 @@ export async function getColleges() {
 export const fetchColleges = getColleges;
 
 /**
- * Returns all programs.
+ * Returns all programs, optionally filtered by college_id.
+ * @param {string|number} [collegeId]
  * @returns {Promise<Array>} Array of program objects
  */
-export async function getPrograms() {
+export async function getPrograms(collegeId) {
   try {
-    const res = await axios.get(`${API_BASE_URL}/programs/`);
+    const res = await axios.get(`${API_BASE_URL}/programs/`, {
+      params: collegeId ? { college_id: collegeId } : {},
+    });
     const data = res.data;
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.results)) return data.results;
@@ -123,16 +126,21 @@ export async function submitReview(payload, token) {
 }
 
 /**
- * Checks if a user has already submitted a review
+ * Checks if a user has already submitted a review for the current academic year
  * @param {string} userId
  * @param {string} [token]
+ * @param {string} [admissionDate]
  */
-export async function checkUserReview(userId, token) {
+export async function checkUserReview(userId, token, admissionDate) {
   if (!userId) return { hasSubmitted: false };
   try {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const params = { user_id: userId };
+    if (admissionDate) {
+      params.admission_date = admissionDate;
+    }
     const res = await axios.get(`${API_BASE_URL}/reviews/`, {
-      params: { user_id: userId },
+      params,
       headers,
     });
     const data = res.data;
@@ -143,10 +151,27 @@ export async function checkUserReview(userId, token) {
       hasSubmitted,
       college_id: data?.college_id,
       college_name: data?.college_name,
+      year_of_study: data?.year_of_study,
     };
   } catch (error) {
     console.error('API Error [checkUserReview]: Failed to check user review status:', error);
     return { hasSubmitted: false };
+  }
+}
+
+/**
+ * Registers a student profile in the backend database.
+ * @param {Object} studentData
+ * @param {string} [token]
+ */
+export async function registerStudent(studentData, token) {
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await axios.post(`${API_BASE_URL}/students/register/`, studentData, { headers });
+    return res.data;
+  } catch (error) {
+    console.error('API Error [registerStudent]: Failed to register student profile:', error);
+    throw error;
   }
 }
 

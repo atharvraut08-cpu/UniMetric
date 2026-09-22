@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
-import { getColleges } from '../services/mockDataService';
+import { getColleges, getPrograms, registerStudent } from '../services/mockDataService';
 import {
   GraduationCap, Mail, Lock, User, Eye, EyeOff,
   ArrowLeft, LogIn, UserPlus, ChevronRight, ShieldCheck,
-  AlertCircle, CheckCircle2, Building2, Calendar,
+  AlertCircle, CheckCircle2, Building2, Calendar, BookOpen, Clock,
+  Users, MapPin,
 } from 'lucide-react';
 
 const ROLES = ['Prospect', 'Student', 'Admin'];
@@ -16,16 +17,27 @@ const roleDescriptions = {
   Admin:    'Manage colleges, reviews, and platform analytics.',
 };
 
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry', 'Other'
+];
+
 /* ─── Reusable form field ─── */
 function Field({ id, label, type = 'text', placeholder, value, onChange, icon: Icon, rightSlot, required = false }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm text-slate-300 mb-1.5 font-medium">
+      <label htmlFor={id} className="block text-sm text-brand-charcoal mb-1.5 font-medium">
         {label} {required && <span className="text-red-400">*</span>}
       </label>
       <div className="relative">
         {Icon && (
-          <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         )}
         <input
           id={id}
@@ -34,7 +46,7 @@ function Field({ id, label, type = 'text', placeholder, value, onChange, icon: I
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           required={required}
-          className={`w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/60 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all ${
+          className={`w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/60 text-brand-paper placeholder-slate-300 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all ${
             Icon ? 'pl-10' : ''
           } ${rightSlot ? 'pr-10' : ''}`}
         />
@@ -51,7 +63,7 @@ function Field({ id, label, type = 'text', placeholder, value, onChange, icon: I
 /* ─── Login form ─── */
 function LoginForm({ onSwitch }) {
   const navigate = useNavigate();
-  const { signIn, isSupabaseConfigured } = useRole();
+  const { signIn, login, isSupabaseConfigured } = useRole();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -75,6 +87,23 @@ function LoginForm({ onSwitch }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoStudentLogin = () => {
+    login({
+      id: 'demo-student-tester',
+      email: 'student@unimetric.edu',
+      name: 'Aditya Sharma',
+      role: 'Student',
+      college_id: 1,
+      program_id: 1,
+      year_of_study: '2',
+      admission_date: '2024-08-01',
+      gender: 'Male',
+      age_group: '18-21',
+      state_of_domicile: 'Maharashtra',
+    });
+    navigate('/submit-feedback');
   };
 
   return (
@@ -116,9 +145,9 @@ function LoginForm({ onSwitch }) {
         }
       />
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
+      <div className="flex items-center justify-between text-xs text-brand-charcoal/70">
         <span>{isSupabaseConfigured ? 'Secured by Supabase' : 'Local Auth Mode'}</span>
-        <button type="button" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+        <button type="button" className="text-brand-charcoal font-medium hover:underline transition-colors">
           Forgot password?
         </button>
       </div>
@@ -136,12 +165,21 @@ function LoginForm({ onSwitch }) {
         {loading ? 'Signing in…' : 'Sign In'}
       </button>
 
-      <p className="text-center text-sm text-slate-500">
+      <button
+        type="button"
+        id="demo-student-login-btn"
+        onClick={handleDemoStudentLogin}
+        className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-brand-charcoal/15 bg-brand-cream/50 text-brand-charcoal font-bold text-xs hover:bg-brand-cream transition-all shadow-soft cursor-pointer"
+      >
+        <span>⚡ Demo: Enter as Verified Student</span>
+      </button>
+
+      <p className="text-center text-sm text-brand-charcoal">
         Don&apos;t have an account?{' '}
         <button
           type="button"
           onClick={onSwitch}
-          className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+          className="text-brand-charcoal font-bold underline hover:opacity-80 transition-opacity"
         >
           Create one
         </button>
@@ -162,7 +200,14 @@ function SignUpForm({ onSwitch }) {
   const [selectedRole, setSelectedRole] = useState('Student');
   const [colleges, setColleges] = useState([]);
   const [selectedCollegeId, setSelectedCollegeId] = useState('');
+  const [programs, setPrograms] = useState([]);
+  const [selectedProgramId, setSelectedProgramId] = useState('');
+  const [loadingPrograms, setLoadingPrograms] = useState(false);
+  const [admissionDate, setAdmissionDate] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
+  const [gender, setGender] = useState('');
+  const [ageGroup, setAgeGroup] = useState('');
+  const [stateOfDomicile, setStateOfDomicile] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -178,6 +223,47 @@ function SignUpForm({ onSwitch }) {
       });
   }, []);
 
+  // Fetch programs when college selection changes
+  useEffect(() => {
+    if (!selectedCollegeId) {
+      setPrograms([]);
+      setSelectedProgramId('');
+      return;
+    }
+    setLoadingPrograms(true);
+    getPrograms(selectedCollegeId)
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        setPrograms(list);
+      })
+      .catch((err) => {
+        console.error('Failed to load programs for college:', err);
+        setPrograms([]);
+      })
+      .finally(() => {
+        setLoadingPrograms(false);
+      });
+  }, [selectedCollegeId]);
+
+  // Handle admission date change and auto-calculate current year of study
+  const handleAdmissionDateChange = (val) => {
+    setAdmissionDate(val);
+    if (val) {
+      const [yearStr, monthStr] = val.split('-');
+      const admYear = parseInt(yearStr, 10);
+      const admMonth = parseInt(monthStr, 10);
+      if (!isNaN(admYear) && !isNaN(admMonth)) {
+        const now = new Date();
+        const months = (now.getFullYear() - admYear) * 12 + ((now.getMonth() + 1) - admMonth);
+        let calcYear = '1';
+        if (months >= 36) calcYear = '4';
+        else if (months >= 24) calcYear = '3';
+        else if (months >= 12) calcYear = '2';
+        setSelectedYear(calcYear);
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -192,7 +278,12 @@ function SignUpForm({ onSwitch }) {
 
     if (selectedRole === 'Student') {
       if (!selectedCollegeId) return setErrorMsg('Please select your college.');
+      if (!selectedProgramId) return setErrorMsg('Please select your program / department.');
+      if (!admissionDate) return setErrorMsg('Please provide your admission month & year.');
       if (!selectedYear) return setErrorMsg('Please select your year of study.');
+      if (!gender) return setErrorMsg('Please select your gender.');
+      if (!ageGroup) return setErrorMsg('Please select your age group.');
+      if (!stateOfDomicile) return setErrorMsg('Please select your state of domicile.');
     }
 
     setLoading(true);
@@ -203,8 +294,33 @@ function SignUpForm({ onSwitch }) {
         password,
         role: selectedRole,
         college_id: selectedRole === 'Student' ? selectedCollegeId : undefined,
+        program_id: selectedRole === 'Student' ? selectedProgramId : undefined,
+        admission_date: selectedRole === 'Student' ? admissionDate : undefined,
         year_of_study: selectedRole === 'Student' ? selectedYear : undefined,
+        gender: selectedRole === 'Student' ? gender : undefined,
+        ageGroup: selectedRole === 'Student' ? ageGroup : undefined,
+        age_group: selectedRole === 'Student' ? ageGroup : undefined,
+        stateOfDomicile: selectedRole === 'Student' ? stateOfDomicile : undefined,
+        state_of_domicile: selectedRole === 'Student' ? stateOfDomicile : undefined,
       });
+
+      // Synchronize student profile directly with backend Postgres database
+      if (selectedRole === 'Student') {
+        const studentUserId = data?.user?.id || 'student-' + Date.now();
+        try {
+          await registerStudent({
+            user_id: studentUserId,
+            program_id: selectedProgramId ? parseInt(selectedProgramId, 10) : null,
+            admission_date: admissionDate || null,
+            year_of_study: selectedYear || null,
+            gender: gender || '',
+            age_group: ageGroup || '',
+            state_of_domicile: stateOfDomicile || '',
+          }, data?.session?.access_token);
+        } catch (regErr) {
+          console.warn('Backend student profile sync notice:', regErr);
+        }
+      }
 
       // If Supabase has email confirmation enabled
       if (data?.user && !data?.session && isSupabaseConfigured) {
@@ -286,7 +402,7 @@ function SignUpForm({ onSwitch }) {
 
       {/* Role picker */}
       <div>
-        <label className="block text-sm text-slate-300 mb-2 font-medium">
+        <label className="block text-sm text-brand-charcoal mb-2 font-medium">
           I am a… <span className="text-red-400">*</span>
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -297,8 +413,8 @@ function SignUpForm({ onSwitch }) {
               onClick={() => setSelectedRole(r)}
               className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl border text-xs font-medium transition-all duration-200 ${
                 selectedRole === r
-                  ? 'border-indigo-500 bg-indigo-500/20 text-indigo-300 shadow-md shadow-indigo-500/10'
-                  : 'border-slate-700 bg-slate-800/60 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+                  ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400 shadow-md shadow-indigo-500/10'
+                  : 'border-slate-700 bg-slate-800/60 text-brand-paper hover:border-slate-600 hover:text-white'
               }`}
             >
               {r === 'Admin' ? <ShieldCheck className="w-4 h-4" /> : r === 'Student' ? <User className="w-4 h-4" /> : <GraduationCap className="w-4 h-4" />}
@@ -307,31 +423,34 @@ function SignUpForm({ onSwitch }) {
           ))}
         </div>
         {selectedRole && (
-          <p className="mt-2 text-xs text-slate-500 animate-fade-in">{roleDescriptions[selectedRole]}</p>
+          <p className="mt-2 text-xs text-brand-charcoal/70 animate-fade-in">{roleDescriptions[selectedRole]}</p>
         )}
       </div>
 
-      {/* Student-specific fields: College & Year of Study */}
+      {/* Student-specific fields: College, Program, Admission Date & Year of Study */}
       {selectedRole === 'Student' && (
         <div className="space-y-4 p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 animate-fade-in">
-          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider">
             <GraduationCap className="w-4 h-4 text-indigo-400" />
             Student Academic Profile
           </div>
 
           {/* Select Your College */}
           <div>
-            <label htmlFor="signup-college" className="block text-sm text-slate-300 mb-1.5 font-medium">
+            <label htmlFor="signup-college" className="block text-sm text-brand-charcoal mb-1.5 font-medium">
               Select Your College <span className="text-red-400">*</span>
             </label>
             <div className="relative">
-              <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               <select
                 id="signup-college"
                 value={selectedCollegeId}
-                onChange={(e) => setSelectedCollegeId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCollegeId(e.target.value);
+                  setSelectedProgramId('');
+                }}
                 required
-                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
+                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-brand-paper placeholder-slate-300 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
               >
                 <option value="">— Select Your College —</option>
                 {colleges.map((c) => (
@@ -340,33 +459,184 @@ function SignUpForm({ onSwitch }) {
                   </option>
                 ))}
               </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
                 ▼
               </div>
             </div>
           </div>
 
-          {/* Year of Study */}
+          {/* Select Your Program (Dependent on College) */}
           <div>
-            <label htmlFor="signup-year" className="block text-sm text-slate-300 mb-1.5 font-medium">
-              Year of Study <span className="text-red-400">*</span>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="signup-program" className="block text-sm text-brand-charcoal font-medium">
+                Select Your Program <span className="text-red-400">*</span>
+              </label>
+              {loadingPrograms && (
+                <span className="text-xs text-indigo-400 animate-pulse">Loading programs…</span>
+              )}
+            </div>
+            <div className="relative">
+              <BookOpen className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <select
+                id="signup-program"
+                value={selectedProgramId}
+                onChange={(e) => setSelectedProgramId(e.target.value)}
+                disabled={!selectedCollegeId || loadingPrograms}
+                required
+                className={`w-full pl-10 pr-8 py-3 rounded-xl border text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none ${
+                  !selectedCollegeId
+                    ? 'border-slate-800 bg-slate-800/50 text-slate-500 cursor-not-allowed'
+                    : 'border-slate-700 bg-slate-800/80 text-brand-paper cursor-pointer'
+                }`}
+              >
+                <option value="">
+                  {!selectedCollegeId
+                    ? '— Select college first —'
+                    : loadingPrograms
+                    ? '— Loading programs… —'
+                    : '— Select Your Program —'}
+                </option>
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.program_name} {p.degree_type ? `(${p.degree_type})` : ''}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* Admission Month & Year */}
+          <div>
+            <label htmlFor="signup-admission-date" className="block text-sm text-brand-charcoal mb-1.5 font-medium">
+              Admission Month & Year <span className="text-red-400">*</span>
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                id="signup-admission-date"
+                type="month"
+                value={admissionDate}
+                onChange={(e) => handleAdmissionDateChange(e.target.value)}
+                required
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-brand-paper placeholder-slate-300 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer [color-scheme:dark]"
+              />
+            </div>
+            <p className="mt-1 text-[11px] text-brand-charcoal/60">
+              Used to calculate your current academic year of study.
+            </p>
+          </div>
+
+          {/* Year of Study */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="signup-year" className="block text-sm text-brand-charcoal font-medium">
+                Year of Study <span className="text-red-400">*</span>
+              </label>
+              {selectedYear && admissionDate && (
+                <span className="text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+                  Auto-calculated
+                </span>
+              )}
+            </div>
+            <div className="relative">
+              <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               <select
                 id="signup-year"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 required
-                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-white text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
+                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-brand-paper placeholder-slate-300 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
               >
                 <option value="">— Select Year of Study —</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
+                <option value="1">1st Year (Freshman)</option>
+                <option value="2">2nd Year (Sophomore)</option>
+                <option value="3">3rd Year (Junior)</option>
+                <option value="4">4th Year (Senior)</option>
               </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-xs">
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                ▼
+              </div>
+            </div>
+          </div>
+
+          {/* Demographic Profile: Gender & Age Group */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Gender */}
+            <div>
+              <label htmlFor="signup-gender" className="block text-sm text-brand-charcoal mb-1.5 font-medium">
+                Gender <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <select
+                  id="signup-gender"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-brand-paper placeholder-slate-300 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">— Select Gender —</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                  ▼
+                </div>
+              </div>
+            </div>
+
+            {/* Age Group */}
+            <div>
+              <label htmlFor="signup-age-group" className="block text-sm text-brand-charcoal mb-1.5 font-medium">
+                Age Group <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <select
+                  id="signup-age-group"
+                  value={ageGroup}
+                  onChange={(e) => setAgeGroup(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-brand-paper placeholder-slate-300 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">— Select Age Group —</option>
+                  <option value="Under 18">Under 18</option>
+                  <option value="18-21">18-21</option>
+                  <option value="22-25">22-25</option>
+                  <option value="26+">26+</option>
+                </select>
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
+                  ▼
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* State of Domicile */}
+          <div>
+            <label htmlFor="signup-state" className="block text-sm text-brand-charcoal mb-1.5 font-medium">
+              State of Domicile <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <select
+                id="signup-state"
+                value={stateOfDomicile}
+                onChange={(e) => setStateOfDomicile(e.target.value)}
+                required
+                className="w-full pl-10 pr-8 py-3 rounded-xl border border-slate-700 bg-slate-800/80 text-brand-paper placeholder-slate-300 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer"
+              >
+                <option value="">— Select State of Domicile —</option>
+                {INDIAN_STATES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
                 ▼
               </div>
             </div>
@@ -387,12 +657,12 @@ function SignUpForm({ onSwitch }) {
         {loading ? 'Creating account…' : 'Create Account'}
       </button>
 
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-sm text-brand-charcoal">
         Already have an account?{' '}
         <button
           type="button"
           onClick={onSwitch}
-          className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+          className="text-brand-charcoal font-bold underline hover:opacity-80 transition-opacity"
         >
           Sign in
         </button>
@@ -429,7 +699,7 @@ export default function AuthPage() {
               Data-driven decisions<br />
               <span className="gradient-text">start here.</span>
             </h2>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <p className="text-brand-cream text-sm leading-relaxed">
               Join thousands of students who use UniMetric to discover, compare,
               and choose the right college with confidence.
             </p>
@@ -443,7 +713,7 @@ export default function AuthPage() {
               'Side-by-side college comparison tool',
               'Sentiment-driven feedback insights',
             ].map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-sm text-slate-300">
+              <li key={item} className="flex items-start gap-2.5 text-sm text-brand-cream">
                 <ChevronRight className="w-4 h-4 text-indigo-400 flex-shrink-0 mt-0.5" />
                 {item}
               </li>
@@ -451,7 +721,7 @@ export default function AuthPage() {
           </ul>
         </div>
 
-        <p className="text-slate-600 text-xs">© 2025 UniMetric — College Review & Analytics System</p>
+        <p className="text-brand-cream/60 text-xs">© 2025 UniMetric — College Review & Analytics System</p>
       </div>
 
       {/* Right panel — form */}
@@ -460,7 +730,7 @@ export default function AuthPage() {
         <div className="absolute top-6 left-6">
           <Link
             to="/"
-            className="flex items-center gap-1.5 text-slate-500 hover:text-white text-sm transition-colors"
+            className="flex items-center gap-1.5 text-brand-charcoal/70 hover:text-brand-charcoal text-sm transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Home
@@ -503,10 +773,10 @@ export default function AuthPage() {
           {/* Form card */}
           <div className="glass-card p-7">
             <div className="mb-6">
-              <h1 className="text-xl font-bold text-white mb-1">
+              <h1 className="text-xl font-bold text-brand-charcoal mb-1">
                 {mode === 'login' ? 'Welcome back' : 'Create your account'}
               </h1>
-              <p className="text-slate-400 text-sm">
+              <p className="text-brand-charcoal/70 text-sm">
                 {mode === 'login'
                   ? 'Sign in to access your personalized dashboard.'
                   : 'Get started — it only takes a minute.'}

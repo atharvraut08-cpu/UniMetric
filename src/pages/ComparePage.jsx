@@ -81,8 +81,8 @@ export default function ComparePage() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-xl font-bold text-white">Registered Users Only</h2>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <h2 className="text-xl font-bold text-brand-charcoal">Registered Users Only</h2>
+            <p className="text-brand-charcoal/70 text-sm leading-relaxed">
               Comparing colleges side-by-side is a feature reserved for registered users.
               Log in with a Prospect or Student account to access this tool.
             </p>
@@ -115,12 +115,12 @@ export default function ComparePage() {
 
       {/* Page header */}
       <div className="text-center max-w-2xl mx-auto animate-fade-in-up">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-medium mb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-700 text-xs font-semibold mb-4">
           <BarChart3 className="w-3.5 h-3.5" />
           Side-by-Side Comparison
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Compare Colleges</h1>
-        <p className="text-slate-400 text-sm leading-relaxed">
+        <h1 className="text-3xl sm:text-4xl font-bold text-brand-charcoal mb-3">Compare Colleges</h1>
+        <p className="text-brand-charcoal/70 text-sm leading-relaxed">
           Select two colleges to compare their ratings, infrastructure, and career outcomes side-by-side.
         </p>
       </div>
@@ -156,14 +156,14 @@ export default function ComparePage() {
       {!hasBoth && (
         <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
           <div className="w-20 h-20 rounded-full border border-slate-800 bg-slate-900 flex items-center justify-center mb-5">
-            <BarChart3 className="w-10 h-10 text-slate-700" />
+            <BarChart3 className="w-10 h-10 text-slate-400" />
           </div>
-          <p className="text-slate-400 font-medium">
+          <p className="text-brand-charcoal/70 font-medium">
             {!selectedA && !selectedB
               ? 'Select two colleges to start comparing.'
               : `Select ${!selectedA ? 'College A' : 'College B'} to continue.`}
           </p>
-          <p className="text-slate-600 text-sm mt-1">
+          <p className="text-brand-charcoal/50 text-sm mt-1">
             Metrics, charts, and delta indicators will appear here.
           </p>
         </div>
@@ -177,22 +177,22 @@ export default function ComparePage() {
 
           {/* Side-by-side table */}
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Detailed Metrics</h2>
+            <h2 className="text-lg font-semibold text-brand-charcoal mb-4">Detailed Metrics</h2>
             <ComparisonTable collegeA={detailA} collegeB={detailB} />
           </div>
 
           {/* ML Insights side-by-side */}
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Data-Driven Insights Comparison</h2>
+            <h2 className="text-lg font-semibold text-brand-charcoal mb-4">Data-Driven Insights Comparison</h2>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <p className="text-sm font-medium text-slate-400 border-b border-slate-800 pb-2">
+                <p className="text-sm font-medium text-brand-charcoal/70 border-b border-brand-charcoal/15 pb-2">
                   {detailA.name}
                 </p>
                 <DataDrivenInsightsSection collegeId={detailA.id} collegeName={detailA.name} />
               </div>
               <div className="space-y-3">
-                <p className="text-sm font-medium text-slate-400 border-b border-slate-800 pb-2">
+                <p className="text-sm font-medium text-brand-charcoal/70 border-b border-brand-charcoal/15 pb-2">
                   {detailB.name}
                 </p>
                 <DataDrivenInsightsSection collegeId={detailB.id} collegeName={detailB.name} />
