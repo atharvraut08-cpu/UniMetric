@@ -44,7 +44,7 @@ const ratingFields = [
   { key: 'careerPlacements', label: 'Career Placements' },
 ];
 
-export default function FeedbackForm({ lockedCollegeId: propCollegeId, lockedYear: propYear }) {
+export default function FeedbackForm({ lockedCollegeId: propCollegeId, lockedYear: propYear, onSubmitted }) {
   const navigate = useNavigate();
   const { session, user } = useRole();
   const [colleges, setColleges] = useState([]);
@@ -130,8 +130,12 @@ export default function FeedbackForm({ lockedCollegeId: propCollegeId, lockedYea
     setIsSubmitting(true);
     const isRecommended = Boolean(form.wouldRecommend);
 
+    const currentUserId = user?.id || session?.user?.id;
+
     try {
       await submitReview({
+        userId: currentUserId,
+        user_id: currentUserId,
         collegeId: form.collegeId,
         studentYear: form.studentYear,
         programId: parseInt(form.programId, 10),
@@ -143,6 +147,11 @@ export default function FeedbackForm({ lockedCollegeId: propCollegeId, lockedYea
         suggestions: form.text.suggestions,
       }, session?.access_token);
       
+      if (currentUserId) {
+        localStorage.setItem(`submitted_review_${currentUserId}`, 'true');
+      }
+      onSubmitted?.();
+
       const submittedCollegeId = form.collegeId;
       setForm(INITIAL_FORM);
       setErrors({});

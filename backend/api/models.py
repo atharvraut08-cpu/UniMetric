@@ -32,6 +32,7 @@ class StudentProfile(models.Model):
         ("1", "1st Year"), ("2", "2nd Year"), ("3", "3rd Year"), ("4", "4th Year"),
     ]
     id = models.AutoField(primary_key=True)
+    user_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
     age_group = models.CharField(max_length=20, blank=True)
     gender = models.CharField(max_length=20, blank=True)
     state_of_domicile = models.CharField(max_length=100, blank=True)
@@ -78,6 +79,7 @@ class FeedbackFact(models.Model):
 
     # Degenerate Dimension
     submission_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    user_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
 
     # Categorical / Text
     would_recommend = models.BooleanField()

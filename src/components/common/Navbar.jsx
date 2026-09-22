@@ -11,20 +11,30 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Build centre nav links based on auth state
+  // Normalize role for robust RBAC checks
+  const userRole = (role || '').toLowerCase();
+  const isStudent = userRole === 'student';
+  const isAdmin = userRole === 'admin';
+  const isProspect = userRole === 'prospect' || !userRole;
+
+  // Build centre nav links based on auth state & role
   const navLinks = isAuthenticated
     ? [
-        { to: '/',       label: 'Home',             icon: BarChart3   },
-        ...(role === 'Admin'
-          ? [{ to: '/admin',   label: 'Admin Dashboard', icon: ShieldCheck }]
-          : [{ to: '/compare', label: 'Compare',          icon: BarChart3   }]),
-        ...(role === 'Student'
+        { to: '/', label: 'Home', icon: BarChart3 },
+        ...((isAdmin || isProspect)
+          ? [{ to: '/compare', label: 'Compare Colleges', icon: BarChart3 }]
+          : []),
+        ...(isAdmin
+          ? [{ to: '/admin', label: 'Admin Dashboard', icon: ShieldCheck }]
+          : []),
+        ...(isStudent
           ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
           : []),
       ]
     : [
-        { to: '/',     label: 'Home',         icon: BarChart3 },
-        { to: '/auth', label: 'Try UniMetric', icon: LogIn    },
+        { to: '/', label: 'Home', icon: BarChart3 },
+        { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
+        { to: '/auth', label: 'Try UniMetric', icon: LogIn },
       ];
 
   const handleLogout = async () => {

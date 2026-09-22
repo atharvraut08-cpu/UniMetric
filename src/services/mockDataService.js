@@ -123,6 +123,34 @@ export async function submitReview(payload, token) {
 }
 
 /**
+ * Checks if a user has already submitted a review
+ * @param {string} userId
+ * @param {string} [token]
+ */
+export async function checkUserReview(userId, token) {
+  if (!userId) return { hasSubmitted: false };
+  try {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await axios.get(`${API_BASE_URL}/reviews/`, {
+      params: { user_id: userId },
+      headers,
+    });
+    const data = res.data;
+    const hasSubmitted = Boolean(
+      data?.has_submitted || data?.hasSubmitted || (Array.isArray(data) && data.length > 0)
+    );
+    return {
+      hasSubmitted,
+      college_id: data?.college_id,
+      college_name: data?.college_name,
+    };
+  } catch (error) {
+    console.error('API Error [checkUserReview]: Failed to check user review status:', error);
+    return { hasSubmitted: false };
+  }
+}
+
+/**
  * Gets pre-computed ML insights for a specific college.
  * @param {string|number} collegeId
  * @returns {Object} Insights: keyDrivers, clusterSummary, associationRules, predictiveRecommendScore

@@ -17,12 +17,20 @@ export default function Sidebar() {
     navigate('/');
   };
 
+  const userRole = (role || '').toLowerCase();
+  const isStudent = userRole === 'student';
+  const isAdmin = userRole === 'admin';
+  const isProspect = userRole === 'prospect' || !userRole;
+
   const navItems = [
     { to: '/', label: 'Home', icon: LayoutDashboard },
-    ...(role === 'Admin'
+    ...(isAdmin
       ? [{ to: '/admin', label: 'Admin Dashboard', icon: BarChart3 }]
-      : [{ to: '/compare', label: 'Compare Colleges', icon: BarChart3 }]),
-    ...(role === 'Student'
+      : []),
+    ...((isAdmin || isProspect)
+      ? [{ to: '/compare', label: 'Compare Colleges', icon: BarChart3 }]
+      : []),
+    ...(isStudent
       ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
       : []),
   ];

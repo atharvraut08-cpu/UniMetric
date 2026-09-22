@@ -201,6 +201,28 @@ class ProgramViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 class SubmitReviewView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({"has_submitted": False, "hasSubmitted": False, "count": 0})
+
+        facts = FeedbackFact.objects.filter(
+            Q(user_id=user_id) | Q(student_profile__user_id=user_id)
+        )
+        has_submitted = facts.exists()
+        first_fact = facts.first() if has_submitted else None
+
+        return Response({
+            "has_submitted": has_submitted,
+            "hasSubmitted": has_submitted,
+            "college_id": first_fact.college_id if first_fact else None,
+            "college_name": first_fact.college.name if first_fact and first_fact.college else None,
+            "submission_id": str(first_fact.submission_id) if first_fact else None,
+            "count": 1 if has_submitted else 0,
+        })
+
     def post(self, request):
         serializer = ReviewSubmitSerializer(data=request.data)
         if serializer.is_valid():
@@ -218,9 +240,22 @@ class SubmitReviewView(views.APIView):
                 except Program.DoesNotExist:
                     pass
 
+            uid = data.get('userId') or data.get('user_id') or ""
+
+            # Check duplicate submission if uid is provided
+            if uid:
+                already_exists = FeedbackFact.objects.filter(
+                    Q(user_id=uid) | Q(student_profile__user_id=uid)
+                ).exists()
+                if already_exists:
+                    return Response({
+                        "error": "You have already submitted a review. Students are limited to one review."
+                    }, status=400)
+
             # Create Student Profile
             student_profile = StudentProfile.objects.create(
-                year_of_study=data['studentYear']
+                year_of_study=data['studentYear'],
+                user_id=uid
             )
 
             # Get or Create DateDim
@@ -265,6 +300,7 @@ class SubmitReviewView(views.APIView):
                     category=category,
                     score=score,
                     submission_id=submission_id,
+                    user_id=uid,
                     would_recommend=data['wouldRecommend'],
                     sentiment="POSITIVE", # Hardcoded or basic inference since ML is out of scope
                     positive_feedback=data['positiveFeedback'],

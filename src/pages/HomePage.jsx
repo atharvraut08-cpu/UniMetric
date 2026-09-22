@@ -146,15 +146,17 @@ export default function HomePage() {
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-4 mt-6 animate-fade-in-up delay-300">
-            <a
-              href="/compare"
-              onClick={handleCompareClick}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-charcoal text-white text-sm font-semibold hover:bg-brand-charcoal/90 transition-all duration-200 shadow-soft"
-            >
-              <BarChart3 className="w-4 h-4" />
-              Compare Colleges
-            </a>
-            {role === 'Student' && (
+            {role?.toLowerCase() !== 'student' && (
+              <a
+                href="/compare"
+                onClick={handleCompareClick}
+                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-charcoal text-white text-sm font-semibold hover:bg-brand-charcoal/90 transition-all duration-200 shadow-soft"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Compare Colleges
+              </a>
+            )}
+            {role?.toLowerCase() === 'student' && (
               <Link
                 to="/submit-feedback"
                 className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-coral text-white text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-soft"

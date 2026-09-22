@@ -44,6 +44,8 @@ class ReviewSubmitSerializer(serializers.Serializer):
     ratings = serializers.DictField(child=serializers.IntegerField())
     wouldRecommend = serializers.BooleanField(required=False)
     would_recommend = serializers.CharField(required=False, allow_blank=True)
+    userId = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    user_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     positiveFeedback = serializers.CharField(allow_blank=True, required=False, default="")
     complaints = serializers.CharField(allow_blank=True, required=False, default="")
     suggestions = serializers.CharField(allow_blank=True, required=False, default="")
