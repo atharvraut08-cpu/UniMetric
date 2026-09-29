@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { clearDashboardSessionCache } from '../services/mockDataService';
 
 const RoleContext = createContext(null);
 
@@ -186,6 +187,8 @@ export function RoleProvider({ children }) {
         console.error('Error signing out from Supabase:', err);
       }
     }
+    // Clean up cached dashboard session data on logout so next session starts fresh
+    clearDashboardSessionCache();
     setUser(null);
     setSession(null);
     setRole('Prospect');

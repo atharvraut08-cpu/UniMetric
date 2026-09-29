@@ -43,12 +43,131 @@ export async function getPrograms(collegeId) {
   }
 }
 
+// Session Storage Cache Constants & Helpers
+const SESSION_DASHBOARD_PREFIX = 'unimetric_dashboard_';
+const SESSION_ACTIVE_COLLEGE_KEY = 'unimetric_active_college_id';
+
 /**
- * Finds a single college by its id.
+ * Reads cached college dashboard bundle from sessionStorage.
+ * Retains data until user logs out.
+ */
+export function getSessionDashboardData(collegeId) {
+  if (!collegeId) return null;
+  try {
+    const raw = sessionStorage.getItem(`${SESSION_DASHBOARD_PREFIX}${collegeId}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.college) return null;
+    return parsed;
+  } catch (err) {
+    console.warn('Failed to read dashboard from sessionStorage:', err);
+    return null;
+  }
+}
+
+/**
+ * Saves college dashboard bundle into sessionStorage for persistent instant access.
+ */
+export function setSessionDashboardData(collegeId, data) {
+  if (!collegeId || !data) return;
+  try {
+    sessionStorage.setItem(`${SESSION_DASHBOARD_PREFIX}${collegeId}`, JSON.stringify({
+      ...data,
+      cachedAt: Date.now(),
+    }));
+    sessionStorage.setItem(SESSION_ACTIVE_COLLEGE_KEY, String(collegeId));
+  } catch (err) {
+    console.warn('Failed to save dashboard to sessionStorage:', err);
+  }
+}
+
+/**
+ * Retrieves the currently active/last-viewed college ID in the session.
+ */
+export function getSessionActiveCollegeId() {
+  try {
+    return sessionStorage.getItem(SESSION_ACTIVE_COLLEGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Clears all dashboard session data. Called automatically on user logout.
+ */
+export function clearDashboardSessionCache() {
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (key.startsWith('unimetric_') || key.includes('dashboard') || key.includes('college'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => sessionStorage.removeItem(k));
+  } catch (err) {
+    console.warn('Failed to clear dashboard session storage:', err);
+  }
+}
+
+/**
+ * High-performance bundled dashboard fetcher.
+ * Checks sessionStorage first. If missing, requests /api/colleges/<id>/dashboard-bundle/
+ * or parallelizes requests, caching the bundle in sessionStorage until logout.
+ */
+export async function getCollegeDashboardBundle(collegeId, { bypassCache = false } = {}) {
+  if (!collegeId) return null;
+
+  if (!bypassCache) {
+    const cached = getSessionDashboardData(collegeId);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  // 1. Try single round-trip bundle endpoint
+  try {
+    const res = await axios.get(`${API_BASE_URL}/colleges/${collegeId}/dashboard-bundle/`);
+    if (res.data && res.data.college) {
+      setSessionDashboardData(collegeId, res.data);
+      return res.data;
+    }
+  } catch (err) {
+    console.warn(`Bundle endpoint unavailable for college ${collegeId}, falling back to parallel fetch:`, err.message);
+  }
+
+  // 2. Parallel fallback
+  try {
+    const [college, reviews, insights] = await Promise.all([
+      getCollegeById(collegeId, { bypassCache }),
+      getReviewsByCollegeId(collegeId, { bypassCache }),
+      getCollegeInsights(collegeId, { bypassCache }).catch(() => null),
+    ]);
+
+    const bundle = { college, reviews, insights };
+    if (college) {
+      setSessionDashboardData(collegeId, bundle);
+    }
+    return bundle;
+  } catch (err) {
+    console.error(`Failed to load dashboard data for college ${collegeId}:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Finds a single college by its id. Checks session cache first.
  * @param {string|number} id - The college id
  * @returns {Object|undefined} The college object or undefined if not found
  */
-export async function getCollegeById(id) {
+export async function getCollegeById(id, { bypassCache = false } = {}) {
+  if (!bypassCache) {
+    const sessionData = getSessionDashboardData(id);
+    if (sessionData && sessionData.college) {
+      return sessionData.college;
+    }
+  }
+
   try {
     const res = await axios.get(`${API_BASE_URL}/colleges/${id}/summary/`);
     return res.data;
@@ -60,11 +179,18 @@ export async function getCollegeById(id) {
 }
 
 /**
- * Returns all reviews belonging to a specific college.
+ * Returns all reviews belonging to a specific college. Checks session cache first.
  * @param {string|number} collegeId - The college id to filter by
  * @returns {Array} Filtered array of review objects
  */
-export async function getReviewsByCollegeId(collegeId) {
+export async function getReviewsByCollegeId(collegeId, { bypassCache = false } = {}) {
+  if (!bypassCache) {
+    const sessionData = getSessionDashboardData(collegeId);
+    if (sessionData && Array.isArray(sessionData.reviews)) {
+      return sessionData.reviews;
+    }
+  }
+
   try {
     const res = await axios.get(`${API_BASE_URL}/colleges/${collegeId}/reviews/`);
     const data = res.data;
@@ -117,11 +243,21 @@ export async function compareColleges(idA, idB) {
 }
 
 /**
- * Submits a new review
+ * Submits a new review and invalidates any cached session dashboard data for that college
  */
 export async function submitReview(payload, token) {
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
   const res = await axios.post(`${API_BASE_URL}/reviews/`, payload, { headers });
+  
+  // Invalidate local session storage cache for this college so new submission is reflected immediately
+  if (payload.collegeId) {
+    try {
+      sessionStorage.removeItem(`${SESSION_DASHBOARD_PREFIX}${payload.collegeId}`);
+    } catch {
+      // Ignore sessionStorage exceptions
+    }
+  }
+  
   return res.data;
 }
 
@@ -176,11 +312,19 @@ export async function registerStudent(studentData, token) {
 }
 
 /**
- * Gets pre-computed ML insights for a specific college.
+ * Gets pre-computed ML insights for a specific college. Checks session cache first.
  * @param {string|number} collegeId
+ * @param {Object} [options]
  * @returns {Object} Insights: keyDrivers, clusterSummary, associationRules, predictiveRecommendScore
  */
-export async function getCollegeInsights(collegeId) {
+export async function getCollegeInsights(collegeId, { bypassCache = false } = {}) {
+  if (!bypassCache) {
+    const sessionData = getSessionDashboardData(collegeId);
+    if (sessionData && sessionData.insights) {
+      return sessionData.insights;
+    }
+  }
+
   try {
     const res = await axios.get(`${API_BASE_URL}/analytics/college/${collegeId}/insights/`);
     return res.data;

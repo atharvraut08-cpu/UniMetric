@@ -58,7 +58,7 @@ def train_regression(df_wide: pd.DataFrame, category_columns: list) -> tuple[dic
 
     r2 = r2_score(y_test, model.predict(X_test))
 
-    impact_dict = dict(zip(category_columns, model.coef_.tolist()))
+    impact_dict = dict(zip(cols, model.coef_.tolist()))
     # Sort by absolute coefficient descending
     impact_dict = dict(
         sorted(impact_dict.items(), key=lambda x: abs(x[1]), reverse=True)

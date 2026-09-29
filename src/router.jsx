@@ -19,6 +19,7 @@ const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { index: true,             element: <HomePage />             },
+      { path: 'dashboard',       element: <CollegeDashboardPage /> },
       { path: 'college/:id',     element: <CollegeDashboardPage /> },
       { path: 'compare',         element: <ComparePage />          },
       { path: 'submit-feedback', element: <SubmitFeedbackPage />   },

@@ -5,11 +5,12 @@ import {
   PlusCircle,
   GraduationCap,
   Settings,
+  Building2,
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
 export default function Sidebar() {
-  const { role, logout, isAuthenticated } = useRole();
+  const { role, user, logout, isAuthenticated } = useRole();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,23 +18,23 @@ export default function Sidebar() {
     navigate('/');
   };
 
-  const userRole = (role || '').toLowerCase();
+  const userRole = (role || user?.role || '').toLowerCase();
   const isStudent = userRole === 'student';
   const isAdmin = userRole === 'admin';
-  const isProspect = userRole === 'prospect' || !userRole;
 
-  const navItems = [
-    { to: '/', label: 'Home', icon: LayoutDashboard },
-    ...(isAdmin
-      ? [{ to: '/admin', label: 'Admin Dashboard', icon: BarChart3 }]
-      : []),
-    ...((isAdmin || isProspect)
-      ? [{ to: '/compare', label: 'Compare Colleges', icon: BarChart3 }]
-      : []),
-    ...(isStudent
-      ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
-      : []),
-  ];
+  const navItems = isAdmin
+    ? [
+        { to: '/', label: 'Home', icon: LayoutDashboard },
+        { to: '/admin', label: 'Admin Dashboard', icon: BarChart3 },
+      ]
+    : [
+        { to: '/', label: 'Home', icon: LayoutDashboard },
+        { to: '/dashboard', label: 'College Dashboard', icon: Building2 },
+        { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
+        ...(isStudent
+          ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
+          : []),
+      ];
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-between">

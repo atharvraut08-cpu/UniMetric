@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
-  GraduationCap, BarChart3, PlusCircle,
+  GraduationCap, BarChart3, PlusCircle, Building2,
   Menu, X, LogIn, LogOut, UserCircle2, ShieldCheck,
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
@@ -12,30 +12,39 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   // Normalize role for robust RBAC checks
-  const userRole = (role || '').toLowerCase();
+  const userRole = (role || user?.role || '').toLowerCase();
   const isStudent = userRole === 'student';
   const isAdmin = userRole === 'admin';
-  const isProspect = userRole === 'prospect' || !userRole;
+  const isProspect = userRole === 'prospect' || (!isStudent && !isAdmin);
 
   // Build centre nav links based on auth state & role
-  const navLinks = isAuthenticated
-    ? [
-        { to: '/', label: 'Home', icon: BarChart3 },
-        ...((isAdmin || isProspect)
-          ? [{ to: '/compare', label: 'Compare Colleges', icon: BarChart3 }]
-          : []),
-        ...(isAdmin
-          ? [{ to: '/admin', label: 'Admin Dashboard', icon: ShieldCheck }]
-          : []),
-        ...(isStudent
-          ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
-          : []),
-      ]
-    : [
-        { to: '/', label: 'Home', icon: BarChart3 },
-        { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
-        { to: '/auth', label: 'Try UniMetric', icon: LogIn },
-      ];
+  let navLinks = [];
+
+  if (isAdmin) {
+    // Admin navbar must ONLY display "Home" and "Admin Dashboard"
+    navLinks = [
+      { to: '/', label: 'Home', icon: BarChart3 },
+      { to: '/admin', label: 'Admin Dashboard', icon: ShieldCheck },
+    ];
+  } else if (isAuthenticated) {
+    // Authenticated non-admin users (Students & Prospects)
+    navLinks = [
+      { to: '/', label: 'Home', icon: BarChart3 },
+      { to: '/dashboard', label: 'Dashboard', icon: Building2 },
+      { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
+      ...(isStudent
+        ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
+        : []),
+    ];
+  } else {
+    // Unauthenticated public visitors
+    navLinks = [
+      { to: '/', label: 'Home', icon: BarChart3 },
+      { to: '/dashboard', label: 'Dashboard', icon: Building2 },
+      { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
+      { to: '/auth', label: 'Try UniMetric', icon: LogIn },
+    ];
+  }
 
   const handleLogout = async () => {
     await logout();
@@ -66,8 +75,8 @@ export default function Navbar() {
                 to={to}
                 end={to === '/'}
                 className={({ isActive }) => {
-                  const isAdmin = to === '/admin';
-                  if (isAdmin) {
+                  const isAdminRoute = to === '/admin';
+                  if (isAdminRoute) {
                     return `px-4 py-2 rounded-2xl text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
                       isActive
                         ? 'bg-brand-yellow text-brand-charcoal font-semibold shadow-soft'

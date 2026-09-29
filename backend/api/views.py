@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Avg, Count, Q, F, ExpressionWrapper
 from django.db.models.functions import Cast
 from django.db.models import FloatField, IntegerField
+from django.core.cache import cache
 from .models import College, Program, StudentProfile, DateDim, FeedbackCategory, FeedbackFact
 from .serializers import (
     CollegeListSerializer, 
@@ -11,6 +12,8 @@ from .serializers import (
     ReviewSubmitSerializer, 
     StudentRegistrationSerializer
 )
+from analytics.models import CollegeInsightCache
+from analytics.serializers import CollegeInsightSerializer
 from datetime import date, datetime
 from django.utils import timezone
 
@@ -58,7 +61,8 @@ class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        queryset = College.objects.all()
+        # Prefetch programs to avoid N+1 queries in serializer
+        queryset = College.objects.prefetch_related('programs')
         search = self.request.query_params.get('search', None)
         if search:
             queryset = queryset.filter(
@@ -69,17 +73,11 @@ class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
             ).distinct()
 
         # Annotate overall stats
-        # Total unique submissions
         queryset = queryset.annotate(
             unique_reviews=Count('feedback__submission_id', distinct=True)
-        )
-        # Average score across all facts
-        queryset = queryset.annotate(
+        ).annotate(
             avg_score=Avg('feedback__score')
-        )
-        # Recommendation percent: cast boolean → integer (0/1), then AVG, then × 100
-        # PostgreSQL cannot directly AVG a boolean; it can AVG an integer.
-        queryset = queryset.annotate(
+        ).annotate(
             recommend_pct=ExpressionWrapper(
                 Avg(Cast('feedback__would_recommend', IntegerField())) * 100,
                 output_field=FloatField(),
@@ -92,63 +90,97 @@ class CollegeSummaryView(views.APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, id):
+        cache_key = f"college_summary_{id}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
         try:
-            college = College.objects.get(id=id)
+            college = College.objects.prefetch_related('programs').get(id=id)
         except College.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
-        return Response(self._get_summary(college))
+        summary_data = self._get_summary(college)
+        cache.set(cache_key, summary_data, timeout=300)
+        return Response(summary_data)
 
     def _get_summary(self, college):
-        facts = FeedbackFact.objects.filter(college=college)
-        total_reviews = facts.values('submission_id').distinct().count()
-        if total_reviews == 0:
-            return self._empty_summary(college)
-        
-        overall_avg = facts.aggregate(avg=Avg('score'))['avg']
-        
-        # Calculate category averages
-        cat_avgs = facts.values('category__category_name').annotate(avg_score=Avg('score'))
-        cat_dict = {item['category__category_name']: round(item['avg_score'], 1) for item in cat_avgs}
+        # Optimized single query fetching minimal lightweight dictionary records
+        facts_qs = FeedbackFact.objects.filter(college=college).values(
+            'submission_id', 'category__category_name', 'score',
+            'would_recommend', 'sentiment', 'positive_feedback', 'complaints', 'suggestions'
+        )
+        facts_list = list(facts_qs)
+        programs_list = [p.program_name for p in college.programs.all()]
 
-        # Calculate recommendation percent
-        # Get one fact per submission to avoid over-counting if we count manually
-        submissions = facts.distinct('submission_id')
-        recommends = sum(1 for s in submissions if s.would_recommend)
+        if not facts_list:
+            return self._empty_summary(college, programs_list)
+
+        total_score_sum = 0
+        total_score_count = 0
+        cat_sums = {}
+        cat_counts = {}
+        submissions = {}
+
+        for row in facts_list:
+            sid = str(row['submission_id'])
+            score = row['score']
+            cname = row['category__category_name'] or "General"
+
+            total_score_sum += score
+            total_score_count += 1
+
+            cat_sums[cname] = cat_sums.get(cname, 0) + score
+            cat_counts[cname] = cat_counts.get(cname, 0) + 1
+
+            if sid not in submissions:
+                submissions[sid] = {
+                    'would_recommend': row['would_recommend'],
+                    'sentiment': (row['sentiment'] or '').upper(),
+                    'pos': row['positive_feedback'],
+                    'comp': row['complaints'],
+                    'sug': row['suggestions'],
+                }
+
+        total_reviews = len(submissions)
+        overall_avg = round(total_score_sum / total_score_count, 1) if total_score_count > 0 else 0
+        cat_dict = {
+            cname: round(cat_sums[cname] / cat_counts[cname], 1)
+            for cname in cat_sums
+        }
+
+        recommends = sum(1 for s in submissions.values() if s['would_recommend'])
         recommend_pct = int((recommends / total_reviews) * 100) if total_reviews > 0 else 0
 
-        # Sentiment counts
-        positive = sum(1 for s in submissions if s.sentiment.upper() == 'POSITIVE')
-        neutral = sum(1 for s in submissions if s.sentiment.upper() == 'NEUTRAL')
-        negative = sum(1 for s in submissions if s.sentiment.upper() == 'NEGATIVE')
+        positive = sum(1 for s in submissions.values() if s['sentiment'] == 'POSITIVE')
+        neutral = sum(1 for s in submissions.values() if s['sentiment'] == 'NEUTRAL')
+        negative = sum(1 for s in submissions.values() if s['sentiment'] == 'NEGATIVE')
 
-        # Feedback texts
-        pos_feedbacks = [s.positive_feedback for s in submissions if s.positive_feedback]
-        complaints = [s.complaints for s in submissions if s.complaints]
-        suggestions = [s.suggestions for s in submissions if s.suggestions]
+        pos_feedbacks = [s['pos'] for s in submissions.values() if s['pos']]
+        complaints = [s['comp'] for s in submissions.values() if s['comp']]
+        suggestions = [s['sug'] for s in submissions.values() if s['sug']]
+
+        labs_val = cat_dict.get('Infra — Quality of Equipment') or cat_dict.get('Labs', 0)
+        wifi_val = cat_dict.get('Wi-Fi & Connectivity') or cat_dict.get('Wi-Fi', 0)
+        hostel_val = cat_dict.get('Hostel & Accommodation') or cat_dict.get('Hostel', 0)
+        infra_avg = round((labs_val + wifi_val + hostel_val) / 3, 2)
 
         return {
             "id": college.id,
             "name": college.name,
             "location": college.location,
             "type": college.get_college_type_display(),
-            "programs": [p.program_name for p in college.programs.all()],
-            "overallRating": round(overall_avg, 1) if overall_avg else 0,
+            "programs": programs_list,
+            "overallRating": overall_avg,
             "totalReviews": total_reviews,
             "recommendationPercent": recommend_pct,
             "ratings": {
                 "teachingQuality": cat_dict.get('Teaching Quality', 0),
                 "infrastructure": {
-                    "labs": cat_dict.get('Infra — Quality of Equipment') or cat_dict.get('Labs', 0),
-                    "wifi": cat_dict.get('Wi-Fi & Connectivity') or cat_dict.get('Wi-Fi', 0),
-                    "hostel": cat_dict.get('Hostel & Accommodation') or cat_dict.get('Hostel', 0),
-                    "overall": round(
-                        (
-                            (cat_dict.get('Infra — Quality of Equipment') or cat_dict.get('Labs', 0)) +
-                            (cat_dict.get('Wi-Fi & Connectivity') or cat_dict.get('Wi-Fi', 0)) +
-                            (cat_dict.get('Hostel & Accommodation') or cat_dict.get('Hostel', 0))
-                        ) / 3, 2
-                    )
+                    "labs": labs_val,
+                    "wifi": wifi_val,
+                    "hostel": hostel_val,
+                    "overall": infra_avg
                 },
                 "careerPlacements": cat_dict.get('Placements & Opportunities') or cat_dict.get('Career Placements', 0),
                 "detailed": cat_dict
@@ -165,13 +197,15 @@ class CollegeSummaryView(views.APIView):
             }
         }
 
-    def _empty_summary(self, college):
+    def _empty_summary(self, college, programs_list=None):
+        if programs_list is None:
+            programs_list = [p.program_name for p in college.programs.all()]
         return {
             "id": college.id,
             "name": college.name,
             "location": college.location,
             "type": college.get_college_type_display(),
-            "programs": [p.program_name for p in college.programs.all()],
+            "programs": programs_list,
             "overallRating": 0,
             "totalReviews": 0,
             "recommendationPercent": 0,
@@ -198,7 +232,7 @@ class CollegeCompareView(views.APIView):
         except ValueError:
             return Response({"error": "Invalid IDs"}, status=400)
 
-        colleges = College.objects.filter(id__in=ids)
+        colleges = College.objects.filter(id__in=ids).prefetch_related('programs')
         summary_view = CollegeSummaryView()
         results = [summary_view._get_summary(c) for c in colleges]
         return Response(results)
@@ -207,45 +241,101 @@ class CollegeReviewsView(views.APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, id):
+        cache_key = f"college_reviews_{id}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
         try:
             college = College.objects.get(id=id)
         except College.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
-        # Get unique submissions
-        submissions = FeedbackFact.objects.filter(college=college).distinct('submission_id')
-        
-        results = []
-        for s in submissions:
-            # Reconstruct the ratings dictionary for this submission
-            facts = FeedbackFact.objects.filter(submission_id=s.submission_id)
-            ratings = {}
-            for f in facts:
-                cat_name = f.category.category_name
-                # Map back to frontend expected keys
-                if cat_name in ('Teaching Quality',):
-                    ratings['teachingQuality'] = f.score
-                elif cat_name in ('Infra — Quality of Equipment', 'Labs'):
-                    ratings['labs'] = f.score
-                elif cat_name in ('Wi-Fi & Connectivity', 'Wi-Fi'):
-                    ratings['wifi'] = f.score
-                elif cat_name in ('Hostel & Accommodation', 'Hostel'):
-                    ratings['hostel'] = f.score
-                elif cat_name in ('Placements & Opportunities', 'Career Placements'):
-                    ratings['careerPlacements'] = f.score
-                ratings[cat_name] = f.score
+        # Single bulk query with select_related: ELIMINATES N+1 QUERIES!
+        facts = (
+            FeedbackFact.objects.filter(college=college)
+            .select_related('student_profile', 'program', 'category')
+            .order_by('-id')
+        )
 
-            results.append({
-                "id": str(s.submission_id),
-                "collegeId": college.id,
-                "studentYear": s.student_profile.get_year_of_study_display() if s.student_profile else "",
-                "program": s.program.program_name if s.program else "",
-                "ratings": ratings,
-                "sentiment": s.sentiment.lower(),
-                "comment": s.positive_feedback or s.complaints or s.suggestions
-            })
-            
+        reviews_map = {}
+        for f in facts:
+            sid = str(f.submission_id)
+            if sid not in reviews_map:
+                student_year = ""
+                if f.student_profile:
+                    student_year = f.student_profile.get_year_of_study_display()
+                program_name = f.program.program_name if f.program else ""
+                comment = f.positive_feedback or f.complaints or f.suggestions or ""
+                reviews_map[sid] = {
+                    "id": sid,
+                    "collegeId": college.id,
+                    "studentYear": student_year,
+                    "program": program_name,
+                    "ratings": {},
+                    "sentiment": (f.sentiment or "NEUTRAL").lower(),
+                    "comment": comment
+                }
+
+            cat_name = f.category.category_name if f.category else ""
+            if cat_name:
+                if cat_name == 'Teaching Quality':
+                    reviews_map[sid]['ratings']['teachingQuality'] = f.score
+                elif cat_name in ('Infra — Quality of Equipment', 'Labs'):
+                    reviews_map[sid]['ratings']['labs'] = f.score
+                elif cat_name in ('Wi-Fi & Connectivity', 'Wi-Fi'):
+                    reviews_map[sid]['ratings']['wifi'] = f.score
+                elif cat_name in ('Hostel & Accommodation', 'Hostel'):
+                    reviews_map[sid]['ratings']['hostel'] = f.score
+                elif cat_name in ('Placements & Opportunities', 'Career Placements'):
+                    reviews_map[sid]['ratings']['careerPlacements'] = f.score
+                reviews_map[sid]['ratings'][cat_name] = f.score
+
+        results = list(reviews_map.values())
+        cache.set(cache_key, results, timeout=300)
         return Response(results)
+
+class CollegeDashboardBundleView(views.APIView):
+    """
+    GET /api/colleges/<id>/dashboard-bundle/
+    High-performance endpoint that returns college summary, reviews, and ML insights
+    in a SINGLE HTTP round-trip with server-side caching.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, id):
+        cache_key = f"college_bundle_{id}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
+        try:
+            college = College.objects.prefetch_related('programs').get(id=id)
+        except College.DoesNotExist:
+            return Response({'error': 'College not found'}, status=404)
+
+        summary_view = CollegeSummaryView()
+        summary = summary_view._get_summary(college)
+
+        reviews_view = CollegeReviewsView()
+        reviews_resp = reviews_view.get(request, id)
+        reviews = reviews_resp.data if isinstance(reviews_resp, Response) else []
+
+        insights = None
+        try:
+            insight_cache = CollegeInsightCache.objects.get(college_id=id)
+            serializer = CollegeInsightSerializer(insight_cache)
+            insights = serializer.data
+        except CollegeInsightCache.DoesNotExist:
+            insights = None
+
+        bundle_data = {
+            "college": summary,
+            "reviews": reviews,
+            "insights": insights,
+        }
+        cache.set(cache_key, bundle_data, timeout=300)
+        return Response(bundle_data)
 
 class ProgramViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProgramSerializer
@@ -442,6 +532,11 @@ class SubmitReviewView(views.APIView):
                     complaints=data['complaints'],
                     suggestions=data['suggestions']
                 )
+
+            # Invalidate backend cache for this college so new reviews show immediately
+            cache.delete(f"college_summary_{college.id}")
+            cache.delete(f"college_reviews_{college.id}")
+            cache.delete(f"college_bundle_{college.id}")
 
             return Response({
                 "status": "success", 

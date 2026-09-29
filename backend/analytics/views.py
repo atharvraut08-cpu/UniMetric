@@ -1,6 +1,7 @@
 from rest_framework import views
 from rest_framework.response import Response
 from django.core.management import call_command
+from django.core.cache import cache
 from io import StringIO
 from .models import CollegeInsightCache, GlobalInsightCache
 from .serializers import CollegeInsightSerializer, GlobalInsightSerializer
@@ -13,8 +14,13 @@ class CollegeInsightsView(views.APIView):
     Only reads from CollegeInsightCache — no training happens here.
     """
     def get(self, request, id):
+        cache_key = f"college_insights_{id}"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
         try:
-            cache = CollegeInsightCache.objects.get(college_id=id)
+            insight_obj = CollegeInsightCache.objects.get(college_id=id)
         except CollegeInsightCache.DoesNotExist:
             return Response(
                 {
@@ -23,8 +29,10 @@ class CollegeInsightsView(views.APIView):
                 },
                 status=404,
             )
-        serializer = CollegeInsightSerializer(cache)
-        return Response(serializer.data)
+        serializer = CollegeInsightSerializer(insight_obj)
+        data = serializer.data
+        cache.set(cache_key, data, timeout=600)
+        return Response(data)
 
 
 class OverviewInsightsView(views.APIView):
@@ -33,16 +41,23 @@ class OverviewInsightsView(views.APIView):
     Returns global analytics (category clusters + cross-college rules).
     """
     def get(self, request):
+        cache_key = "global_insights_overview"
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
+
         try:
-            cache = GlobalInsightCache.objects.get(singleton_key="GLOBAL")
+            insight_obj = GlobalInsightCache.objects.get(singleton_key="GLOBAL")
         except GlobalInsightCache.DoesNotExist:
             return Response(
                 {"error": "No global analytics computed yet. "
                           "Run: python manage.py run_analytics_pipeline"},
                 status=404,
             )
-        serializer = GlobalInsightSerializer(cache)
-        return Response(serializer.data)
+        serializer = GlobalInsightSerializer(insight_obj)
+        data = serializer.data
+        cache.set(cache_key, data, timeout=600)
+        return Response(data)
 
 
 class RefreshAnalyticsView(views.APIView):
@@ -55,6 +70,8 @@ class RefreshAnalyticsView(views.APIView):
         try:
             out = StringIO()
             call_command("run_analytics_pipeline", stdout=out)
+            # Clear all cached ML insights and college summaries
+            cache.clear()
             return Response({
                 "status": "success",
                 "output": out.getvalue(),

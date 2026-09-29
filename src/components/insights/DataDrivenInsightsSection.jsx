@@ -25,12 +25,18 @@ function SkeletonCard({ height = 'h-32' }) {
   );
 }
 
-export default function DataDrivenInsightsSection({ collegeId, collegeName, showDWM = false }) {
-  const [insights, setInsights] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function DataDrivenInsightsSection({ collegeId, collegeName, initialInsights = null, showDWM = false }) {
+  const [insights, setInsights] = useState(initialInsights);
+  const [loading, setLoading] = useState(!initialInsights);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (initialInsights) {
+      setInsights(initialInsights);
+      setLoading(false);
+      return;
+    }
+
     if (!collegeId) return;
     setLoading(true);
     setError(null);
@@ -43,7 +49,7 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName, show
         setError('Could not load analytics data.');
         setLoading(false);
       });
-  }, [collegeId]);
+  }, [collegeId, initialInsights]);
 
   if (loading) {
     return (

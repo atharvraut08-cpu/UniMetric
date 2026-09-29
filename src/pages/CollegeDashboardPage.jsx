@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Building2, BookOpen } from 'lucide-react';
-import { getCollegeById, getReviewsByCollegeId } from '../services/mockDataService';
+import { ArrowLeft, MapPin, Building2, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  getCollegeDashboardBundle,
+  getSessionDashboardData,
+  getSessionActiveCollegeId
+} from '../services/mockDataService';
+import { useRole } from '../context/RoleContext';
 import RatingBadge from '../components/common/RatingBadge';
 import OverallRatingStat from '../components/dashboard/OverallRatingStat';
 import CategoryPerformanceChart from '../components/dashboard/CategoryPerformanceChart';
@@ -19,27 +24,107 @@ const typeColors = {
 
 export default function CollegeDashboardPage() {
   const { id } = useParams();
+  const { user } = useRole();
   const navigate = useNavigate();
-  const [college, setCollege] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+
+  // Resolve effective college ID from URL parameter, session storage, or user profile
+  const effectiveId = id || getSessionActiveCollegeId() || user?.college_id || '1';
+
+  // Synchronously hydrate from sessionStorage if available (instant 0ms render without loading flash)
+  const initialCached = getSessionDashboardData(effectiveId);
+  const [college, setCollege] = useState(initialCached?.college || null);
+  const [reviews, setReviews] = useState(initialCached?.reviews || []);
+  const [insights, setInsights] = useState(initialCached?.insights || null);
+  const [loading, setLoading] = useState(!initialCached?.college);
+  const [error, setError] = useState(null);
   const [showDWM, setShowDWM] = useState(false);
+  const [isRevalidating, setIsRevalidating] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      getCollegeById(id),
-      getReviewsByCollegeId(id)
-    ]).then(([colData, revData]) => {
-      setCollege(colData);
-      setReviews(revData);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [id]);
+    let isMounted = true;
+
+    async function loadDashboard() {
+      if (!effectiveId) return;
+
+      // Only show full loading screen if we have no session-cached data
+      if (!college) {
+        setLoading(true);
+      } else {
+        setIsRevalidating(true);
+      }
+      setError(null);
+
+      try {
+        const bundle = await getCollegeDashboardBundle(effectiveId);
+
+        if (!isMounted) return;
+
+        if (!bundle || !bundle.college) {
+          if (!college) {
+            setError('College not found.');
+          }
+        } else {
+          setCollege(bundle.college);
+          setReviews(bundle.reviews || []);
+          setInsights(bundle.insights || null);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('Failed to load college analytics dashboard:', err);
+        if (!college) {
+          setError('Failed to load college analytics. Please try again later.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          setIsRevalidating(false);
+        }
+      }
+    }
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [effectiveId]);
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-96 text-center px-4">
+      <div className="flex flex-col items-center justify-center min-h-96 text-center px-4 animate-fade-in">
+        <div className="w-10 h-10 border-4 border-brand-charcoal/20 border-t-brand-charcoal rounded-full animate-spin mb-4" />
         <p className="text-brand-charcoal text-lg font-bold">Loading dashboard...</p>
+        <p className="text-brand-charcoal/60 text-xs mt-1">Retrieving institutional metrics and reviews</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-96 text-center px-4 animate-fade-in">
+        <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mb-3">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <p className="text-brand-charcoal text-lg font-bold mb-1">
+          {error}
+        </p>
+        <p className="text-brand-charcoal/60 text-xs font-medium max-w-md mb-4">
+          There was an issue communicating with the analytics server. Check your connection or verify that the backend is running.
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2.5 rounded-2xl bg-brand-coral text-white font-semibold text-sm flex items-center gap-1.5 shadow-soft hover:opacity-90 transition-all cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2.5 rounded-2xl border border-brand-charcoal/20 bg-brand-paper text-brand-charcoal font-semibold text-sm hover:bg-brand-cream transition-all cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -50,7 +135,7 @@ export default function CollegeDashboardPage() {
         <p className="text-brand-charcoal text-lg font-bold">College not found.</p>
         <button
           onClick={() => navigate('/')}
-          className="mt-4 px-6 py-2.5 rounded-2xl bg-brand-coral text-white font-semibold text-sm flex items-center gap-1.5 shadow-soft hover:opacity-90 transition-all"
+          className="mt-4 px-6 py-2.5 rounded-2xl bg-brand-coral text-white font-semibold text-sm flex items-center gap-1.5 shadow-soft hover:opacity-90 transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </button>
@@ -143,7 +228,12 @@ export default function CollegeDashboardPage() {
 
       {/* ── Row 4: Data-Driven ML Insights ── */}
       <div className="animate-fade-in-up delay-400">
-        <DataDrivenInsightsSection collegeId={id} collegeName={college.name} showDWM={showDWM} />
+        <DataDrivenInsightsSection
+          collegeId={effectiveId}
+          collegeName={college.name}
+          initialInsights={insights}
+          showDWM={showDWM}
+        />
       </div>
     </div>
   );

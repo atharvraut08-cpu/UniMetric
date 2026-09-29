@@ -28,6 +28,16 @@ const INDIAN_STATES = [
   'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry', 'Other'
 ];
 
+const formatAuthError = (err) => {
+  if (!err) return 'An unexpected error occurred.';
+  const msg = err.message || String(err);
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+    return 'Unable to reach authentication service. Please check your internet connection or DNS.';
+  }
+  return msg;
+};
+
+
 /* ─── Reusable form field ─── */
 function Field({ id, label, type = 'text', placeholder, value, onChange, icon: Icon, rightSlot, required = false }) {
   return (
@@ -63,7 +73,7 @@ function Field({ id, label, type = 'text', placeholder, value, onChange, icon: I
 /* ─── Login form ─── */
 function LoginForm({ onSwitch }) {
   const navigate = useNavigate();
-  const { signIn, login, isSupabaseConfigured } = useRole();
+  const { signIn, isSupabaseConfigured } = useRole();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -83,27 +93,11 @@ function LoginForm({ onSwitch }) {
       await signIn({ email, password });
       navigate('/');
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to sign in. Please verify your credentials.');
+      console.error('Supabase Login Error:', err);
+      setErrorMsg(formatAuthError(err));
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoStudentLogin = () => {
-    login({
-      id: 'demo-student-tester',
-      email: 'student@unimetric.edu',
-      name: 'Aditya Sharma',
-      role: 'Student',
-      college_id: 1,
-      program_id: 1,
-      year_of_study: '2',
-      admission_date: '2024-08-01',
-      gender: 'Male',
-      age_group: '18-21',
-      state_of_domicile: 'Maharashtra',
-    });
-    navigate('/submit-feedback');
   };
 
   return (
@@ -163,15 +157,6 @@ function LoginForm({ onSwitch }) {
           <LogIn className="w-4 h-4" />
         )}
         {loading ? 'Signing in…' : 'Sign In'}
-      </button>
-
-      <button
-        type="button"
-        id="demo-student-login-btn"
-        onClick={handleDemoStudentLogin}
-        className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-brand-charcoal/15 bg-brand-cream/50 text-brand-charcoal font-bold text-xs hover:bg-brand-cream transition-all shadow-soft cursor-pointer"
-      >
-        <span>⚡ Demo: Enter as Verified Student</span>
       </button>
 
       <p className="text-center text-sm text-brand-charcoal">
@@ -329,7 +314,7 @@ function SignUpForm({ onSwitch }) {
         navigate('/');
       }
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to create account.');
+      setErrorMsg(formatAuthError(err));
     } finally {
       setLoading(false);
     }

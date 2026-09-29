@@ -5,6 +5,7 @@ from .views import (
     CollegeSummaryView, 
     CollegeCompareView, 
     CollegeReviewsView, 
+    CollegeDashboardBundleView,
     ProgramViewSet, 
     SubmitReviewView,
     StudentRegisterView
@@ -17,6 +18,7 @@ router.register(r'programs', ProgramViewSet, basename='program')
 urlpatterns = [
     # Custom endpoints (must come before router.urls to prevent /colleges/<pk>/ from capturing /colleges/compare/)
     path('colleges/compare/', CollegeCompareView.as_view(), name='college-compare'),
+    path('colleges/<int:id>/dashboard-bundle/', CollegeDashboardBundleView.as_view(), name='college-dashboard-bundle'),
     path('colleges/<int:id>/summary/', CollegeSummaryView.as_view(), name='college-summary'),
     path('colleges/<int:id>/reviews/', CollegeReviewsView.as_view(), name='college-reviews'),
     path('reviews/', SubmitReviewView.as_view(), name='submit-review'),
