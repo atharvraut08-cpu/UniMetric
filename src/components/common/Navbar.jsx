@@ -26,21 +26,23 @@ export default function Navbar() {
       { to: '/', label: 'Home', icon: BarChart3 },
       { to: '/admin', label: 'Admin Dashboard', icon: ShieldCheck },
     ];
+  } else if (isStudent) {
+    // Student navbar must ONLY display "Home" and "Submit Feedback"
+    navLinks = [
+      { to: '/', label: 'Home', icon: BarChart3 },
+      { to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle },
+    ];
   } else if (isAuthenticated) {
-    // Authenticated non-admin users (Students & Prospects)
+    // Authenticated prospect users
     navLinks = [
       { to: '/', label: 'Home', icon: BarChart3 },
       { to: '/dashboard', label: 'Dashboard', icon: Building2 },
       { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
-      ...(isStudent
-        ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
-        : []),
     ];
   } else {
-    // Unauthenticated public visitors
+    // Unauthenticated public visitors: only public links
     navLinks = [
       { to: '/', label: 'Home', icon: BarChart3 },
-      { to: '/dashboard', label: 'Dashboard', icon: Building2 },
       { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
       { to: '/auth', label: 'Try UniMetric', icon: LogIn },
     ];

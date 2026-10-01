@@ -25,6 +25,7 @@ MIN_SAMPLES_KMEANS = K_MEANS_K  # need at least k samples
 # Heuristic keywords to classify cluster labels
 INFRA_KEYWORDS = ["lab", "wi-fi", "wifi", "hostel", "infra", "internet", "facility", "canteen", "amenities", "cleanliness", "equipment"]
 TEACHING_KEYWORDS = ["teaching", "course", "academic", "faculty", "class", "curriculum", "library"]
+CAREER_KEYWORDS = ["placement", "career", "extracurricular", "culture", "opportunity", "club"]
 
 
 def _matches_keywords(col_name: str, keywords: list) -> bool:
@@ -134,45 +135,92 @@ def cluster_summary_for_college(df_wide: pd.DataFrame, category_columns: list) -
     return sorted(summary, key=lambda x: x["count"], reverse=True)
 
 
-def run_agglomerative(college_category_matrix: pd.DataFrame, n_clusters: int = 3) -> list:
+def run_agglomerative(
+    data: pd.DataFrame,
+    n_clusters: int = 3,
+    category_columns: list = None,
+) -> list:
     """
-    Runs agglomerative clustering on the college × category matrix,
-    transposed so categories (not colleges) are clustered.
-    Returns list of dicts: [{group: label, categories: [cat_name, ...]}]
+    Runs agglomerative hierarchical clustering (Ward's linkage) on categories.
+    Outputs a simplified hierarchical structure of top-level cluster splits
+    that can be easily parsed and displayed by the frontend.
     """
-    category_columns = list(college_category_matrix.columns)
-    if len(category_columns) < n_clusters:
-        n_clusters = max(1, len(category_columns))
-
-    # Transpose: rows = categories, cols = colleges
-    X = college_category_matrix.T.values
-
-    if len(X) < n_clusters:
+    if data is None or data.empty:
         return []
 
-    model = AgglomerativeClustering(n_clusters=n_clusters, linkage="ward")
+    if category_columns:
+        cols = [c for c in category_columns if c in data.columns]
+    else:
+        cols = list(data.columns)
+
+    if not cols:
+        return []
+
+    actual_clusters = min(n_clusters, len(cols))
+    if actual_clusters < 1:
+        return []
+
+    # Transpose so rows = categories, columns = samples/colleges
+    df_clean = data[cols].copy()
+    for col in cols:
+        df_clean[col] = df_clean[col].fillna(df_clean[col].mean())
+
+    X = df_clean.T.values
+    if len(X) < actual_clusters:
+        return []
+
+    model = AgglomerativeClustering(n_clusters=actual_clusters, linkage="ward")
     cluster_ids = model.fit_predict(X)
 
-    # Group categories by cluster
     from collections import defaultdict
     groups = defaultdict(list)
-    for cat, cid in zip(category_columns, cluster_ids):
+    for cat, cid in zip(cols, cluster_ids):
         groups[int(cid)].append(cat)
 
-    # Name clusters by their dominant category keyword
-    GROUP_NAMES = ["Infrastructure Factor", "Academic Factor", "Outcome Factor",
-                   "Experience Factor", "Research Factor"]
-
+    split_prefixes = ["Branch A", "Branch B", "Branch C", "Branch D", "Branch E"]
     result = []
+
     for i, (cid, cats) in enumerate(groups.items()):
-        # Determine name based on keywords
-        if any(_matches_keywords(c, INFRA_KEYWORDS) for c in cats):
-            name = "Infrastructure Factor"
-        elif any(_matches_keywords(c, TEACHING_KEYWORDS) for c in cats):
-            name = "Academic Factor"
+        prefix = split_prefixes[i % len(split_prefixes)]
+        
+        # Count keyword matches to pick dominant theme
+        teach_count = sum(1 for c in cats if _matches_keywords(c, TEACHING_KEYWORDS))
+        career_count = sum(1 for c in cats if _matches_keywords(c, CAREER_KEYWORDS))
+        infra_count = sum(1 for c in cats if _matches_keywords(c, INFRA_KEYWORDS))
+
+        if teach_count >= infra_count and teach_count >= career_count and teach_count > 0:
+            theme = "Academic Pedagogy & Curriculum"
+            group_name = "Academic Factor"
+            summary = "Course curriculum rigor, faculty teaching quality, and library"
+        elif career_count >= infra_count and career_count > 0:
+            theme = "Career Pathways & Campus Culture"
+            group_name = "Outcome Factor"
+            summary = "Placement packages, industry drives, and student clubs"
+        elif infra_count > 0:
+            theme = "Infrastructure & Campus Living"
+            group_name = "Infrastructure Factor"
+            summary = "Physical amenities, housing, hygiene, and connectivity"
         else:
-            name = GROUP_NAMES[i % len(GROUP_NAMES)]
+            theme = f"Factor Cluster {cid + 1}"
+            group_name = f"Cluster Factor {cid + 1}"
+            summary = "Complementary student experience evaluation dimensions"
 
-        result.append({"group": name, "categories": cats})
+        # Compute average score across this split if data contains score columns
+        try:
+            split_avg = round(float(data[cats].mean().mean()), 2)
+        except Exception:
+            split_avg = None
 
-    return result
+        result.append({
+            "split_name": f"{prefix}: {theme}",
+            "group": group_name,
+            "theme": theme,
+            "cluster_id": cid,
+            "categories": cats,
+            "category_count": len(cats),
+            "average_score": split_avg,
+            "summary": summary,
+        })
+
+    return sorted(result, key=lambda x: x["cluster_id"])
+

@@ -46,14 +46,20 @@ class Command(BaseCommand):
         self.stdout.write(f"  Categories: {global_cat_cols}")
         self.stdout.write(f"  Total submissions: {len(global_df)}")
 
-        # ── Step 2: Global classifier (GaussianNB) ─────────────────────────────
-        self.stdout.write("Training global GaussianNB classifier...")
-        global_model, global_accuracy = train_classifier(global_df, global_cat_cols)
+        # ── Step 2: Global classifiers (GaussianNB + Decision Tree) ───────────
+        self.stdout.write("Training global classifiers (GaussianNB + Decision Tree)...")
+        global_model, global_accuracy, dt_model, dt_accuracy, dt_top_features = train_classifier(
+            global_df, global_cat_cols
+        )
         if global_model:
             save_model("gnb_global", global_model)
-            self.stdout.write(f"  Accuracy: {global_accuracy:.2%}")
+            self.stdout.write(f"  GaussianNB Accuracy: {global_accuracy:.2%}")
+        if dt_model:
+            save_model("dt_global", dt_model)
+            self.stdout.write(f"  Decision Tree Accuracy: {dt_accuracy:.2%}")
+            self.stdout.write(f"  Top 3 Attributes: {[f['feature'] for f in dt_top_features]}")
         else:
-            self.stdout.write(self.style.WARNING("  Insufficient data for classifier."))
+            self.stdout.write(self.style.WARNING("  Insufficient data for classifiers."))
 
         # ── Step 3: Per-college analytics ──────────────────────────────────────
         colleges = College.objects.all()
@@ -84,7 +90,11 @@ class Command(BaseCommand):
 
                 # Clustering — K-Means segment distribution
                 cluster_summary = cluster_summary_for_college(df_college, cat_cols)
-                self.stdout.write(f"  Clusters: {[s['segment'] for s in cluster_summary]}")
+                self.stdout.write(f"  K-Means Clusters: {[s['segment'] for s in cluster_summary]}")
+
+                # Clustering — Agglomerative hierarchical splits
+                hierarchical_splits = run_agglomerative(df_college, n_clusters=3, category_columns=cat_cols)
+                self.stdout.write(f"  Hierarchical Splits: {[s['split_name'] for s in hierarchical_splits]}")
 
                 # Association rules — per college
                 assoc_rules = mine_association_rules(df_college, cat_cols)
@@ -99,6 +109,9 @@ class Command(BaseCommand):
                         "association_rules": assoc_rules,
                         "predictive_recommend_score": recommend_score,
                         "classifier_accuracy": global_accuracy if global_model else None,
+                        "decision_tree_accuracy": dt_accuracy if dt_model else None,
+                        "decision_tree_top_features": dt_top_features or [],
+                        "hierarchical_groupings": hierarchical_splits or [],
                     },
                 )
                 self.stdout.write(self.style.SUCCESS(f"  [OK] Cache updated."))

@@ -20,8 +20,13 @@ class CollegeInsightCache(models.Model):
     association_rules = models.JSONField(default=list)
     # GaussianNB predict_proba for would_recommend=True, averaged across college
     predictive_recommend_score = models.FloatField(null=True, blank=True)
-    # Accuracy on held-out test split
+    # Accuracy on held-out test split (GaussianNB)
     classifier_accuracy = models.FloatField(null=True, blank=True)
+    # Decision Tree Classifier metrics
+    decision_tree_accuracy = models.FloatField(null=True, blank=True)
+    decision_tree_top_features = models.JSONField(default=list)
+    # Agglomerative Hierarchical Groupings (simplified top-level splits)
+    hierarchical_groupings = models.JSONField(default=list)
     computed_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

@@ -84,7 +84,7 @@ export default function ComparePage() {
             <h2 className="text-xl font-bold text-brand-charcoal">Registered Users Only</h2>
             <p className="text-brand-charcoal/70 text-sm leading-relaxed">
               Comparing colleges side-by-side is a feature reserved for registered users.
-              Log in with a Prospect or Student account to access this tool.
+              Log in with a Prospect account to access this tool.
             </p>
           </div>
 

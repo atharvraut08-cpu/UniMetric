@@ -9,6 +9,9 @@ class CollegeInsightSerializer(serializers.ModelSerializer):
     associationRules = serializers.JSONField(source="association_rules")
     predictiveRecommendScore = serializers.FloatField(source="predictive_recommend_score")
     classifierAccuracy = serializers.FloatField(source="classifier_accuracy")
+    decisionTreeAccuracy = serializers.FloatField(source="decision_tree_accuracy", required=False, allow_null=True)
+    decisionTreeTopFeatures = serializers.JSONField(source="decision_tree_top_features", required=False)
+    hierarchicalGroupings = serializers.JSONField(source="hierarchical_groupings", required=False)
     computedAt = serializers.DateTimeField(source="computed_at")
 
     class Meta:
@@ -20,6 +23,9 @@ class CollegeInsightSerializer(serializers.ModelSerializer):
             "associationRules",
             "predictiveRecommendScore",
             "classifierAccuracy",
+            "decisionTreeAccuracy",
+            "decisionTreeTopFeatures",
+            "hierarchicalGroupings",
             "computedAt",
         ]
 

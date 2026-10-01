@@ -27,13 +27,15 @@ export default function Sidebar() {
         { to: '/', label: 'Home', icon: LayoutDashboard },
         { to: '/admin', label: 'Admin Dashboard', icon: BarChart3 },
       ]
+    : isStudent
+    ? [
+        { to: '/', label: 'Home', icon: LayoutDashboard },
+        { to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle },
+      ]
     : [
         { to: '/', label: 'Home', icon: LayoutDashboard },
-        { to: '/dashboard', label: 'College Dashboard', icon: Building2 },
+        ...(isAuthenticated ? [{ to: '/dashboard', label: 'College Dashboard', icon: Building2 }] : []),
         { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
-        ...(isStudent
-          ? [{ to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle }]
-          : []),
       ];
 
   return (

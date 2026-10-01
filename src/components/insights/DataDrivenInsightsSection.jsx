@@ -1,17 +1,11 @@
-/**
- * DataDrivenInsightsSection.jsx
- * Container component — fetches ML insights from the analytics API and
- * lays out the 4 insight widgets: KeyDrivers, Segments, Rules, Gauge.
- *
- * Updated for light Soft Neo-Brutalism theme with rounded-3xl cards.
- */
 import { useState, useEffect } from 'react';
 import { BrainCircuit, RefreshCw } from 'lucide-react';
 import { getCollegeInsights } from '../../services/mockDataService';
 import KeyDriversChart from './KeyDriversChart';
 import SegmentBadgeList from './SegmentBadgeList';
 import AssociationRuleChips from './AssociationRuleChips';
-import PredictiveRecommendGauge from './PredictiveRecommendGauge';
+import ClassificationComparisonCard from './ClassificationComparisonCard';
+import HierarchicalGroupingsCard from './HierarchicalGroupingsCard';
 
 // Skeleton loading card
 function SkeletonCard({ height = 'h-32' }) {
@@ -58,8 +52,8 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName, init
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <SkeletonCard height="h-52" />
           <SkeletonCard height="h-52" />
-          <SkeletonCard height="h-40" />
-          <SkeletonCard height="h-40" />
+          <SkeletonCard height="h-52" />
+          <SkeletonCard height="h-52" />
         </div>
       </div>
     );
@@ -85,6 +79,9 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName, init
     associationRules,
     predictiveRecommendScore,
     classifierAccuracy,
+    decisionTreeAccuracy,
+    decisionTreeTopFeatures,
+    hierarchicalGroupings,
     computedAt,
   } = insights;
 
@@ -102,7 +99,9 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName, init
           </div>
           <div>
             <h2 className="text-base font-bold text-brand-charcoal">Data-Driven Insights</h2>
-            <p className="text-xs text-brand-charcoal/60 font-medium">ML-powered analytics · Ridge, Naive Bayes, K-Means, Apriori</p>
+            <p className="text-xs text-brand-charcoal/60 font-medium">
+              ML-powered analytics · Ridge, Naive Bayes &amp; Decision Tree, K-Means &amp; Agglomerative, Apriori
+            </p>
           </div>
         </div>
         {computedDate && (
@@ -113,7 +112,7 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName, init
         )}
       </div>
 
-      {/* Grid of 4 widgets */}
+      {/* Grid of ML widgets */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Widget 1: Key Drivers (Ridge Regression) */}
@@ -136,35 +135,21 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName, init
           )}
         </div>
 
-        {/* Widget 2: Predictive Recommend Score (Naive Bayes) + Segment Distribution */}
-        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between">
-          <div>
-            <div className="mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-                Predictive Recommend Score
-              </span>
-              <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
-                Probability of recommendation (Gaussian Naive Bayes)
-              </p>
-            </div>
-            <PredictiveRecommendGauge
-              score={predictiveRecommendScore}
-              accuracy={classifierAccuracy}
-            />
-          </div>
-          {showDWM && (
-            <p className="text-[10px] uppercase font-bold text-brand-charcoal/50 mt-2">
-              Powered by: Gaussian Naive Bayes
-            </p>
-          )}
-        </div>
+        {/* Widget 2: Classification Comparison (Naive Bayes vs. Decision Tree) */}
+        <ClassificationComparisonCard
+          predictiveRecommendScore={predictiveRecommendScore}
+          classifierAccuracy={classifierAccuracy}
+          decisionTreeAccuracy={decisionTreeAccuracy}
+          decisionTreeTopFeatures={decisionTreeTopFeatures}
+          showDWM={showDWM}
+        />
 
         {/* Widget 3: Student Segments (K-Means) */}
         <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between">
           <div>
             <div className="mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-                Student Segments
+                Student Segments (K-Means)
               </span>
               <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
                 Review clusters by satisfaction profile (K-Means, k=3)
@@ -179,15 +164,21 @@ export default function DataDrivenInsightsSection({ collegeId, collegeName, init
           )}
         </div>
 
-        {/* Widget 4: Association Rules (Apriori) */}
-        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between">
+        {/* Widget 4: Hierarchical Groupings (Agglomerative) */}
+        <HierarchicalGroupingsCard
+          hierarchicalGroupings={hierarchicalGroupings}
+          showDWM={showDWM}
+        />
+
+        {/* Widget 5: Association Rules (Apriori) */}
+        <div className="bg-brand-paper rounded-3xl border border-brand-charcoal/10 shadow-soft p-6 flex flex-col justify-between md:col-span-2">
           <div>
             <div className="mb-3">
               <span className="text-xs font-bold uppercase tracking-wider text-brand-charcoal">
-                Co-Occurring Weaknesses
+                Co-Occurring Weaknesses (Apriori Rules)
               </span>
               <p className="text-xs text-brand-charcoal/60 mt-0.5 font-medium">
-                Frequently associated low-rating patterns (Apriori rules)
+                Frequently associated low-rating patterns discovered via association rule mining
               </p>
             </div>
             <AssociationRuleChips associationRules={associationRules} />
