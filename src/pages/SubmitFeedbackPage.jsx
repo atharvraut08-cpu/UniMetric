@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   PlusCircle, Shield, Lock, ShieldCheck, CheckCircle2,
-  ArrowRight,
 } from 'lucide-react';
 import FeedbackForm from '../components/feedback/FeedbackForm';
 import { useRole } from '../context/RoleContext';
@@ -99,7 +98,6 @@ function StudentView() {
 
   // Friendly Pastel "Already Submitted" Screen
   if (hasSubmitted) {
-    const targetCollegeId = collegeId || submissionDetails?.college_id;
     const submittedYear = submissionDetails?.year_of_study || yearOfStudy;
 
     return (
@@ -123,23 +121,10 @@ function StudentView() {
           </div>
 
           {/* Action buttons with brand-coral accent */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            {targetCollegeId ? (
-              <Link
-                to={`/college/${targetCollegeId}`}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-brand-coral text-white text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-soft"
-              >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            ) : null}
+          <div className="flex items-center justify-center pt-4">
             <Link
               to="/"
-              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl ${
-                targetCollegeId
-                  ? 'border border-brand-charcoal/15 bg-brand-cream text-brand-charcoal hover:bg-brand-cream/80'
-                  : 'bg-brand-coral text-white hover:opacity-90'
-              } text-sm font-semibold transition-all duration-200 shadow-soft`}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-brand-coral text-white text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-soft"
             >
               Back to Home
             </Link>

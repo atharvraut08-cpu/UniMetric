@@ -5,7 +5,6 @@ import {
   PlusCircle,
   GraduationCap,
   Settings,
-  Building2,
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
@@ -34,7 +33,6 @@ export default function Sidebar() {
       ]
     : [
         { to: '/', label: 'Home', icon: LayoutDashboard },
-        ...(isAuthenticated ? [{ to: '/dashboard', label: 'College Dashboard', icon: Building2 }] : []),
         { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
       ];
 

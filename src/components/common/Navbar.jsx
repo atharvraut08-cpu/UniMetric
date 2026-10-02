@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
-  GraduationCap, BarChart3, PlusCircle, Building2,
+  GraduationCap, BarChart3, PlusCircle,
   Menu, X, LogIn, LogOut, UserCircle2, ShieldCheck,
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
@@ -33,10 +33,9 @@ export default function Navbar() {
       { to: '/submit-feedback', label: 'Submit Feedback', icon: PlusCircle },
     ];
   } else if (isAuthenticated) {
-    // Authenticated prospect users
+    // Authenticated prospect users: Prospect navigation displays "Home" and "Compare Colleges"
     navLinks = [
       { to: '/', label: 'Home', icon: BarChart3 },
-      { to: '/dashboard', label: 'Dashboard', icon: Building2 },
       { to: '/compare', label: 'Compare Colleges', icon: BarChart3 },
     ];
   } else {

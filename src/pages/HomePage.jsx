@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { BarChart3, ArrowRight, Star, BookOpen, Users } from 'lucide-react';
 import SearchBar from '../components/common/SearchBar';
 import CollegeCard from '../components/common/CollegeCard';
@@ -7,17 +7,13 @@ import { searchColleges, getColleges, getPrograms } from '../services/mockDataSe
 import { useRole } from '../context/RoleContext';
 
 export default function HomePage() {
-  const { role, isAuthenticated } = useRole();
-  const navigate = useNavigate();
+  const { role, user } = useRole();
 
-  const handleCompareClick = (e) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      navigate('/auth');
-    } else {
-      navigate('/compare');
-    }
-  };
+  // Normalize role for robust RBAC checks
+  const userRole = (role || user?.role || '').toLowerCase();
+  const isStudent = userRole === 'student';
+  const isAdmin = userRole === 'admin';
+  const isProspectOrLoggedOut = !isStudent && !isAdmin;
 
   const [allColleges, setAllColleges] = useState([]);
   const [results, setResults] = useState([]);
@@ -146,17 +142,16 @@ export default function HomePage() {
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-4 mt-6 animate-fade-in-up delay-300">
-            {role?.toLowerCase() !== 'student' && (
-              <a
-                href="/compare"
-                onClick={handleCompareClick}
+            {isProspectOrLoggedOut && (
+              <Link
+                to="/compare"
                 className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-charcoal text-white text-sm font-semibold hover:bg-brand-charcoal/90 transition-all duration-200 shadow-soft"
               >
                 <BarChart3 className="w-4 h-4" />
                 Compare Colleges
-              </a>
+              </Link>
             )}
-            {role?.toLowerCase() === 'student' && (
+            {isStudent && (
               <Link
                 to="/submit-feedback"
                 className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-coral text-white text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-soft"

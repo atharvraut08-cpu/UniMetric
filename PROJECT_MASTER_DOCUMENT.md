@@ -1,10 +1,10 @@
 # UniMetric: Project Master Document
 ## Data Warehousing & Data Mining (DWM) Institutional Analytics Platform
 
-> **Document Version**: 2.0.0  
+> **Document Version**: 2.1.0  
 > **System Status**: Production-Ready / Fully Integrated  
 > **Target Domain**: Higher Education Analytics, Academic Quality Assurance, and Student Decision Support  
-> **Core Paradigms**: Multidimensional Star Schema (OLAP), Data Mining, Unsupervised Clustering, Association Rule Mining, Supervised Predictive Inference, Soft Neo-Brutalism UI  
+> **Core Paradigms**: Multidimensional Star Schema (OLAP), Data Mining, Dual Unsupervised Clustering (K-Means & Agglomerative Hierarchical), Dual Supervised Classification (Gaussian Naive Bayes & Decision Tree / ID3-CART), Association Rule Mining (Apriori), Key Driver Extraction (Ridge Regression), Soft Neo-Brutalism UI  
 
 ---
 
@@ -33,12 +33,16 @@ Conventional higher education review systems (e.g., generic review aggregators, 
 
 Built upon this analytical warehouse, UniMetric executes an automated, asynchronous **Data Mining Pipeline**:
 1. **Multidimensional OLAP Rollups & Slice/Dice**: Instantaneous slicing across departments, cohorts, and categories.
-2. **Key Rating Drivers via Ridge Regression**: Isolate the statistical weight ($\beta$) of individual operational variables on overall institutional satisfaction.
-3. **Predictive Recommendation Scoring via Gaussian Naive Bayes**: Classify institutional recommendation likelihood and quantify feature probabilities based on student sentiment profiles.
-4. **Cohort Segmentation via K-Means Clustering ($k=3$)**: Uncover latent student personas (*Highly Satisfied*, *Infrastructure-Critical*, *Academically Challenged*) using multidimensional satisfaction centroids.
+2. **Key Rating Drivers via Ridge Regression**: Isolate the statistical weight ($\beta$) of individual operational variables on overall institutional satisfaction using $L_2$-regularization.
+3. **Dual Supervised Classification Engine**:
+   - **Gaussian Naive Bayes**: Probabilistic recommendation likelihood scoring ($P(\text{Recommend} \mid \mathbf{x})$) and feature probability distributions.
+   - **Decision Tree Classifier (Entropy / ID3-CART)**: Rule-based classification uncovering top decision rules and **Attribute Relevance** (ranking the top 3 most influential split features by Information Gain).
+4. **Dual Unsupervised Clustering Engine**:
+   - **Cohort Segmentation via K-Means Clustering ($k=3$)**: Uncover latent student personas (*Highly Satisfied*, *Infrastructure-Critical*, *Academically Challenged*) using multidimensional satisfaction centroids.
+   - **Hierarchical Taxonomy via Agglomerative Clustering (Ward's Linkage)**: Transpose evaluation matrices to group feedback categories into overarching institutional factor themes (*Academic Pedagogy & Curriculum*, *Infrastructure & Campus Living*, *Career Pathways & Campus Culture*).
 5. **Systemic Bottleneck Discovery via Apriori Association Rule Mining**: Mine frequent negative itemsets to surface co-occurring campus pain points (e.g., $[Low\ Wi\text{-}Fi \land Low\ Labs] \Rightarrow No\ Recommend$).
 
-The platform bridges enterprise data science with consumer-grade software engineering, wrapping complex machine learning models inside an accessible, accessible **Soft Neo-Brutalism** user interface.
+The platform bridges enterprise data science with consumer-grade software engineering, wrapping complex machine learning models inside an accessible, tactile **Soft Neo-Brutalism** user interface.
 
 ---
 
@@ -56,6 +60,7 @@ UniMetric employs a clean, decoupled three-tier architecture comprising a reacti
 │   • Coral (#F4633E), Yellow (#F5C451), Purple (#C7B7F2), Blue (#AEE1F5)│
 │   • Rounded-3xl geometry, tactile borders, high-contrast badges        │
 │   • Role Context: Prospect, Student, Admin                             │
+│   • 5-Widget Data-Driven Insights Section                              │
 └───────────────────┬────────────────────────────────────┬───────────────┘
                     │ HTTPS REST (Axios)                 │ JWT Sessions
                     ▼                                    ▼
@@ -68,6 +73,8 @@ UniMetric employs a clean, decoupled three-tier architecture comprising a reacti
 │   • SSL Connection Pooler (600s TTL) │  │   • Session Pooler (port 5432│
 │   • OLAP Rollup Serialization        │  │     aws-0-ap-northeast-2)    │
 │   • ML Analytics Worker Pipeline     │  │   • User Metadata Storage    │
+│     (Ridge, GNB, DT, KMeans, Agglom, │  │                              │
+│      Apriori)                        │  │                              │
 └───────────────────┬──────────────────┘  └──────────────▲───────────────┘
                     │                                    │
                     │ Managed ORM Connection             │
@@ -82,6 +89,9 @@ UniMetric employs a clean, decoupled three-tier architecture comprising a reacti
 │                                                                        │
 │  ANALYTICAL CACHE (OLAP Data Marts):                                   │
 │    analytics_collegeinsightcache     analytics_globalinsightcache      │
+│    • Key Drivers (Ridge β)           • Dual Classifier Accuracies      │
+│    • K-Means Cohorts (k=3)           • Decision Tree Top Features      │
+│    • Agglomerative Hierarchical Splits• Apriori Association Rules      │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -96,7 +106,7 @@ UniMetric employs a clean, decoupled three-tier architecture comprising a reacti
 | **Client Routing** | React Router | v7.x | Single Page Application (SPA) routing with layout wrapping and RBAC route gating. |
 | **Backend Framework** | Django | 5.x | Robust ORM, declarative migrations, administrative ecosystem. |
 | **API Architecture** | Django REST Framework | 3.15+ | Stateless JSON REST endpoints, custom model serializers, and query validation. |
-| **Data Mining & ML** | scikit-learn & mlxtend | 1.4+ / 0.23+ | Ridge Regression, Gaussian Naive Bayes, K-Means Clustering, Apriori Algorithm. |
+| **Data Mining & ML** | scikit-learn & mlxtend | 1.4+ / 0.23+ | Ridge Regression, Gaussian Naive Bayes, DecisionTreeClassifier, KMeans, AgglomerativeClustering, Apriori Algorithm. |
 | **Data Manipulation** | Pandas & NumPy | 2.x / 1.26+ | Fast vectorization, pivoting long facts into wide analytical matrices. |
 | **Database & Auth** | Supabase (PostgreSQL) | PostgreSQL 15+ | Cloud OLAP warehouse, JWT issue/validation, connection pooling via Supavisor. |
 
@@ -132,8 +142,8 @@ UniMetric discards traditional flat review schemas (where one row equals one ent
 │     program_name        │             │ FK  program_id          │             │     category_group      │
 │     degree_type         │             │ FK  student_profile_id  │             └─────────────────────────┘
 │     subject_area        │             │ FK  date_id             │
-└─────────────────────────┘             │ FK  category_id         │
-                                        │     score (Measure:1-5) │
+│                         │             │ FK  category_id         │
+└─────────────────────────┘             │     score (Measure:1-5) │
                                         │     submission_id (Deg) │
                                         │     user_id             │
                                         │     would_recommend     │
@@ -209,7 +219,7 @@ In UniMetric, a submission by a non-resident student (Day Scholar) simply create
 
 ## 4. Role-Based Access Control (RBAC) & Business Logic
 
-UniMetric defines three distinct security and operational roles, enforced via client-side routing guards and backend business validation.
+UniMetric defines three distinct security and operational roles, enforced via client-side routing guards, dedicated navigation layouts, and backend business validation.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -229,13 +239,14 @@ UniMetric defines three distinct security and operational roles, enforced via cl
 
 ### 4.1 Role Profiles & UI Routing Restrictions
 1. **Prospect (Unauthenticated or Registered Applicant)**:
-   - **Intent**: Prospective applicant exploring colleges for admission.
-   - **Permissions**: Browse search directory, review institutional scorecards, inspect category performance, view student sentiment distributions, and compare colleges side-by-side (`/compare`).
-   - **Restrictions**: Cannot submit feedback (`/submit-feedback` redirects to auth).
+   - **Intent**: Prospective applicant researching colleges for prospective enrollment.
+   - **Streamlined Navigation Layout**: In both [`Navbar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Navbar.jsx) and [`Sidebar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Sidebar.jsx), the Prospect navigation primarily displays **"Home"** and **"Compare Colleges"**. Individual institutional scorecards and ML insights are explored seamlessly by clicking on colleges directly from the Home page directory (`/college/:id`).
+   - **Restrictions**: Cannot submit institutional feedback (`/submit-feedback` redirects to `/auth`).
 2. **Student (Verified Enrolled Student)**:
-   - **Intent**: Active campus attendee providing institutional feedback.
-   - **Permissions**: Submit annual feedback (`/submit-feedback`), view college dashboards.
-   - **Routing Restriction**: **Students are explicitly blocked from the "Compare Colleges" tool in both navigation bars ([`Sidebar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Sidebar.jsx), [`Navbar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Navbar.jsx))**. Comparing colleges is an applicant-stage activity; enrolled students are focused on providing data for their current institution.
+   - **Intent**: Active campus attendee providing institutional feedback for their enrolled college.
+   - **Streamlined Navigation Layout**: In both [`Navbar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Navbar.jsx) and [`Sidebar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Sidebar.jsx), the student interface is intentionally focused strictly on **"Home"** and **"Submit Feedback"**.
+   - **Routing Restriction**: **Students are explicitly blocked from the "Compare Colleges" tool**. College comparison is an applicant-stage activity; enrolled students evaluate their current institution.
+   - **Submission Entitlement**: Permitted to submit feedback once per verified academic year (`/submit-feedback`).
 3. **Admin (Institutional Analyst / System Auditor)**:
    - **Intent**: Data auditor and quality assurance officer.
    - **Permissions**: Unrestricted access across all pages, including the `/admin` portal ([`AdminDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/AdminDashboardPage.jsx)) displaying real-time submission logs, database counts, and the manual pipeline trigger `POST /api/analytics/refresh/`.
@@ -280,36 +291,39 @@ Unlike standard web apps that use crude IP rate-limiting, UniMetric implements a
 
 ## 5. The DWM Analytics Engine & Machine Learning Mapping
 
-The core academic differentiator of UniMetric is its integration of Data Warehousing and Data Mining algorithms. To guarantee high-throughput web performance (<100ms API response time), heavy machine learning operations are executed asynchronously and stored in the **Analytical Insight Cache** (`CollegeInsightCache` and `GlobalInsightCache`).
+The core academic differentiator of UniMetric is its comprehensive integration of Data Warehousing and Data Mining algorithms. To guarantee high-throughput web performance (<100ms API response time), heavy machine learning operations are executed asynchronously and cached in the **Analytical Insight Cache** (`CollegeInsightCache` and `GlobalInsightCache`).
 
 ```
                     FEEDBACK FACT TABLE (OLAP WAREHOUSE)
-                                      │
-                                      ▼
-                        [ml_services/data_loader.py]
+                                       │
+                                       ▼
+                         [ml_services/data_loader.py]
                     Transforms long facts into wide matrix:
                One row per submission, columns = 11 categories
-                                      │
-         ┌────────────────────────────┼────────────────────────────┐
-         │                            │                            │
-         ▼                            ▼                            ▼
-[Ridge Regression]           [Gaussian Naive Bayes]         [K-Means Clustering]
-Target: overall_rating       Target: would_recommend       Groupings: k=3
-• Standardized weights (β)   • Predicts probability         • Highly Satisfied
-• "Key Drivers" Ranking      • Model accuracy on split      • Infra-Critical
-                             • Feature probability          • Academically Challenged
-         │                            │                            │
-         └────────────────────────────┼────────────────────────────┘
-                                      │
-                                      ▼
+                                       │
+         ┌─────────────────────────────┼─────────────────────────────┐
+         │                             │                             │
+         ▼                             ▼                             ▼
+ [Ridge Regression]        [Dual Classification Engine]     [Dual Clustering Engine]
+ Target: overall_rating    Target: would_recommend         1. K-Means (k=3):
+ • Standardized weights β  1. Gaussian Naive Bayes:           Student cohort personas
+ • "Key Drivers" Ranking      • Recommendation likelihood  2. Agglomerative (Ward):
+                              • Test split accuracy           Category factor taxonomy
+                           2. Decision Tree (Entropy):        splits & branch means
+                              • Attribute Relevance (Top 3)
+                              • Test split accuracy
+         │                             │                             │
+         └─────────────────────────────┼─────────────────────────────┘
+                                       │
+                                       ▼
                          [Apriori Rule Mining (mlxtend)]
                          Binarizes scores <= 2 as "Low"
                          • Frequent Itemset Generation
                          • "Co-Occurring Weaknesses"
-                                      │
-                                      ▼
-                      PERSISTED TO COLLEGEINSIGHTCACHE
-                         (Served directly to Client)
+                                       │
+                                       ▼
+                       PERSISTED TO COLLEGEINSIGHTCACHE
+                          (Served directly to Client)
 ```
 
 ### 5.1 OLAP Rollups & Aggregations
@@ -329,33 +343,68 @@ UniMetric implements multi-level SQL aggregations using Django ORM expressions:
 - **Pipeline Implementation**:
   1. Features $\mathbf{X}$ are standardized using `StandardScaler` ($\mu = 0, \sigma = 1$).
   2. Missing categories (e.g. Day Scholars missing hostel scores) are imputed using category column means.
-  3. Regression coefficients $w_j$ represent standardized feature importance weights.
+  3. Regression coefficients $w_j$ represent standardized feature importance weights ($\beta$).
 - **Actionable Insight**:  
   Yields the **"Key Drivers"** ranking. For example, if $\beta_{\text{Curriculum Relevance}} = 0.42$ while $\beta_{\text{Wi-Fi}} = 0.08$, administrators know curriculum improvements will generate over $5\times$ more satisfaction lift than upgrading Wi-Fi routers.
 
-### 5.3 Gaussian Naive Bayes: Predictive Recommend Score
+### 5.3 Dual Supervised Classification Engine: Gaussian Naive Bayes & Decision Tree
 - **File**: [`backend/analytics/ml_services/classification_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/classification_service.py)
-- **Objective**: Predict whether a prospective student will recommend the college given an arbitrary score profile, without requiring complex neural networks.
+- **Target**: `would_recommend` (Binary boolean outcome: recommend or not).
+- **Features**: Continuous rating vectors for all 11 categories combined with one-hot encoded qualitative sentiment (`sent_POSITIVE`, `sent_NEUTRAL`, `sent_NEGATIVE`).
+
+#### 5.3.1 Gaussian Naive Bayes (Probabilistic Classifier)
+- **Objective**: Classify recommendation probability without requiring deep neural architectures.
 - **Mathematical Formulation**:  
   By Bayes' Theorem, with the conditional independence assumption between categories $x_1, \dots, x_n$:
   $$P(Y=1 \mid \mathbf{x}) = \frac{P(Y=1) \prod_{j=1}^n P(x_j \mid Y=1)}{\sum_{k \in \{0, 1\}} P(Y=k) \prod_{j=1}^n P(x_j \mid Y=k)}$$
   where continuous ratings $x_j$ follow Gaussian distributions:
   $$P(x_j \mid Y=k) = \frac{1}{\sqrt{2\pi\sigma_{jk}^2}} \exp\left( -\frac{(x_j - \mu_{jk})^2}{2\sigma_{jk}^2} \right)$$
-- **Features Used**: Category scores plus one-hot encoded qualitative sentiment (`sent_POSITIVE`, `sent_NEUTRAL`, `sent_NEGATIVE`).
-- **Dashboard Display**: Renders the **Predictive Recommend Score** gauge alongside model accuracy on held-out test splits.
+- **Output**: Generates the **Predictive Recommend Score** (calibrated probability $P(Y=1)$) rendered via an interactive circular SVG gauge.
 
-### 5.4 K-Means Clustering ($k=3$): Student Cohort Segmentation
+#### 5.3.2 Decision Tree Classifier (Entropy / Information Gain)
+- **Objective**: Extract white-box decision logic and determine **Attribute Relevance** (identifying the top attributes that govern recommendation outcomes).
+- **Mathematical Formulation**:  
+  The decision tree optimizes splits via **Entropy** and **Information Gain** ($ID3$ / $CART$):
+  $$\text{Entropy}(S) = - \sum_{i \in \{0, 1\}} p_i \log_2 p_i$$
+  $$\text{Gain}(S, A) = \text{Entropy}(S) - \sum_{v \in \text{Values}(A)} \frac{|S_v|}{|S|} \text{Entropy}(S_v)$$
+- **Configuration**: `criterion="entropy"`, `max_depth=4`, `random_state=42`.
+- **Attribute Relevance Ranking**: Extracts the top 3 most important features based on Gini/Entropy reduction:
+  $$\text{Feature Importance}(A) = \frac{\sum_{t \in \text{splits on } A} \Delta I(t)}{\sum_{t' \in \text{all splits}} \Delta I(t')}$$
+  Provides percentage weights (e.g. *Teaching Quality: 41.2%*, *Positive Sentiment: 28.5%*, *Placements: 18.1%*).
+
+#### 5.3.3 Side-by-Side Model Comparison
+Rendered in [`ClassificationComparisonCard.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/ClassificationComparisonCard.jsx):
+- Displays side-by-side held-out test split accuracy cards for Naive Bayes and Decision Tree.
+- Integrates the circular recommendation likelihood gauge alongside the top 3 attribute relevance chips.
+
+### 5.4 Dual Unsupervised Clustering Engine: K-Means & Agglomerative Hierarchical
 - **File**: [`backend/analytics/ml_services/clustering_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/clustering_service.py)
-- **Objective**: Group heterogeneous student bodies into homogeneous, interpretable cohorts based on multidimensional satisfaction vectors.
+
+#### 5.4.1 K-Means Clustering ($k=3$): Student Persona Cohort Segmentation
+- **Objective**: Group student reviews into homogeneous satisfaction cohorts.
 - **Mathematical Formulation**:  
   Partitions $n$ reviews into $k=3$ sets $\mathbf{S} = \{S_1, S_2, S_3\}$ minimizing within-cluster sum of squares:
   $$\arg\min_{\mathbf{S}} \sum_{i=1}^3 \sum_{\mathbf{x} \in S_i} \|\mathbf{x} - \boldsymbol{\mu}_i\|^2$$
-- **Centroid Heuristic Classification**:  
-  The engine examines resulting cluster centroids across domain keywords:
+- **Centroid Heuristic Classification**:
   1. **Highly Satisfied**: Highest centroid mean across all features.
   2. **Infrastructure-Critical**: Adequate academic scores, but severely degraded centroid means in infrastructure, hostel, Wi-Fi, or equipment.
   3. **Academically Challenged**: Discontent with faculty pace, curriculum depth, or library resources.
-- **Output**: Displayed in [`SegmentBadgeList.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/SegmentBadgeList.jsx) showing cohort distribution percentages (e.g. 55% Highly Satisfied, 30% Infrastructure-Critical, 15% Academically Challenged).
+- **Display**: Rendered in [`SegmentBadgeList.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/SegmentBadgeList.jsx) showing cohort distribution percentages and counts.
+
+#### 5.4.2 Agglomerative Hierarchical Clustering (Ward's Linkage): Category Taxonomy Splits
+- **Objective**: Discover natural structural groupings among evaluation categories by clustering the transposed sample matrix.
+- **Mathematical Formulation**:  
+  Bottom-up hierarchical merging where clusters are iteratively combined to minimize increase in total within-cluster variance (Ward's minimum variance criterion):
+  $$\Delta \text{ESS}(A, B) = \frac{n_A n_B}{n_A + n_B} \|\boldsymbol{\mu}_A - \boldsymbol{\mu}_B\|^2$$
+- **Implementation & Thematic Mapping**:
+  - The feature space is transposed ($X \in \mathbb{R}^{\text{categories} \times \text{samples}}$).
+  - `AgglomerativeClustering(n_clusters=3, linkage="ward")` is fitted.
+  - Automatically identifies dominant themes using keyword matching:
+    - **Academic Pedagogy & Curriculum**: Teaching Quality, Curriculum Relevance, Library & Resources.
+    - **Career Pathways & Campus Culture**: Placements & Opportunities, Extracurriculars & Culture.
+    - **Infrastructure & Campus Living**: Equipment, Cleanliness, Basic Amenities, Wi-Fi, Canteen, Hostel.
+- **Computed Metrics**: Split branch labels (`Branch A`, `Branch B`, `Branch C`), category count, branch average satisfaction score, and qualitative summary.
+- **Display**: Rendered in [`HierarchicalGroupingsCard.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/HierarchicalGroupingsCard.jsx).
 
 ### 5.5 Apriori Association Rule Mining: Co-Occurring Weaknesses
 - **File**: [`backend/analytics/ml_services/association_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/association_service.py)
@@ -370,6 +419,18 @@ UniMetric implements multi-level SQL aggregations using Django ORM expressions:
 - **Dashboard Output**: Rendered in [`AssociationRuleChips.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/AssociationRuleChips.jsx):
   - Rule: `Low Infra Cleanliness + Low Canteen → No Recommend`
   - Metrics: Support: 0.18, Confidence: 0.85, Lift: 2.14 ($>1$ denotes a strong correlation rather than coincidental occurrence).
+
+### 5.6 Analytical Cache Models & Pipeline Orchestration
+- **Model**: `CollegeInsightCache` in [`backend/analytics/models.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/models.py):
+  - `key_drivers`: JSON array of Ridge weights.
+  - `cluster_summary`: JSON array of K-Means cohort profiles.
+  - `association_rules`: JSON array of mined Apriori rules.
+  - `predictive_recommend_score`: GaussianNB likelihood probability.
+  - `classifier_accuracy`: GaussianNB test split accuracy.
+  - `decision_tree_accuracy`: Decision Tree test split accuracy.
+  - `decision_tree_top_features`: Top 3 attributes with percentage contributions.
+  - `hierarchical_groupings`: Top-level agglomerative cluster splits with branch means.
+- **Pipeline Runner**: Executed via `python manage.py run_analytics_pipeline` or triggered via admin endpoint `POST /api/analytics/refresh/`.
 
 ---
 
@@ -400,7 +461,7 @@ The feedback submission process ([`FeedbackForm.jsx`](file:///d:/Projects/DWMmin
    - Structured text fields for *Positive Aspects*, *Constructive Complaints*, and *Administrative Suggestions*.
 
 ### 6.2 Persona-Based Synthetic Mock Seeding Engine
-To rigorously test machine learning algorithms without waiting months for organic survey collection, UniMetric includes a sophisticated **Persona Seeding Engine** ([`seed_mock_data.py`](file:///d:/Projects/DWMmini/UniMetric/backend/api/management/commands/seed_mock_data.py)). It generates 90 authentic reviews across three benchmark colleges using realistic behavioral personas:
+To rigorously test machine learning algorithms without waiting months for organic survey collection, UniMetric includes a sophisticated **Persona Seeding Engine** ([`seed_mock_data.py`](file:///d:/Projects/DWMmini/UniMetric/backend/api/management/commands/seed_mock_data.py)). It generates 90 authentic reviews across benchmark colleges using realistic behavioral personas:
 
 #### Seeded Benchmark Institutions
 1. **Premier Tech Institute** (Autonomous, Bengaluru): High curriculum score (4.7) and placements (4.8), but mediocre hostel baseline (2.6).
@@ -410,13 +471,21 @@ To rigorously test machine learning algorithms without waiting months for organi
 #### The Three Seeded Behavioral Personas
 1. **Persona A: "The Tech/Hackathon Enthusiast"**:
    - Heavy weighting on Wi-Fi, modern curriculum, and laboratory equipment.
-   - **Behavioral Rule**: If `is_curriculum_modern == False`, the persona brutally downrates *Placements* ($1-2$) and sets `would_recommend = False`, triggering complaints regarding obsolete technology stacks.
+   - **Behavioral Rule**: If `is_curriculum_modern == False`, the persona downrates *Placements* ($1-2$) and sets `would_recommend = False`.
 2. **Persona B: "The Hosteler"**:
    - Resident student whose living scores (*Hostel*, *Canteen*, *Cleanliness*) are tightly coupled around the college baseline within a tight $\pm 0.4$ variance.
-   - **Text Overrides**: If Hostel rating $<3$, complaints deterministically sample: *"Hostel rooms are cramped"*, *"Terrible Wi-Fi in the hostel"*, or *"Washrooms are rarely cleaned"*.
+   - **Text Overrides**: If Hostel rating $<3$, complaints sample: *"Hostel rooms are cramped"*, *"Terrible Wi-Fi in the hostel"*, or *"Washrooms are rarely cleaned"*.
 3. **Persona C: "The Day Scholar"**:
    - Completely omits the hostel category (exercises the Star Schema's sparse data tolerance).
    - Ratings concentrate on *Teaching Quality*, *Library Access*, and commute amenities.
+
+### 6.3 The 5-Widget Data-Driven Insights Section
+Rendered in [`DataDrivenInsightsSection.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/DataDrivenInsightsSection.jsx) across a balanced 2-column grid:
+1. **Widget 1: Key Rating Drivers**: Horizontal bar chart visualizing standardized Ridge coefficients ($\beta$) indicating which categories exert the strongest influence on overall satisfaction.
+2. **Widget 2: Classification Comparison**: Dual-card layout presenting Gaussian Naive Bayes vs. Decision Tree test split accuracies, the predictive recommendation likelihood gauge, and the Decision Tree's top 3 attribute relevance chips.
+3. **Widget 3: Student Segments (K-Means)**: Cohort breakdown displaying percentages and counts across *Highly Satisfied*, *Infrastructure-Critical*, and *Academically Challenged* student groups.
+4. **Widget 4: Hierarchical Groupings (Agglomerative)**: Bottom-up cluster splits detailing the grouping of campus dimensions into overarching factor branches along with branch average scores.
+5. **Widget 5: Co-Occurring Weaknesses (Apriori Rules)**: Full-width responsive chip container showing frequent low-rating association rules sorted by Lift.
 
 ---
 
@@ -429,32 +498,40 @@ To rigorously test machine learning algorithms without waiting months for organi
 | [`backend/api/models.py`](file:///d:/Projects/DWMmini/UniMetric/backend/api/models.py) | Python (Django) | Star Schema Model Definitions | `College`, `Program`, `StudentProfile`, `DateDim`, `FeedbackCategory`, `FeedbackFact` |
 | [`backend/api/views.py`](file:///d:/Projects/DWMmini/UniMetric/backend/api/views.py) | Python (DRF) | Core API Endpoints & Logic | `calculate_year_of_study`, `CollegeViewSet`, `CollegeSummaryView`, `SubmitReviewView` |
 | [`backend/api/serializers.py`](file:///d:/Projects/DWMmini/UniMetric/backend/api/serializers.py) | Python (DRF) | Serialization & Validation | `CollegeListSerializer`, `ReviewSubmitSerializer`, `StudentRegistrationSerializer` |
-| [`backend/analytics/models.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/models.py) | Python (Django) | Analytics Cache Models | `CollegeInsightCache`, `GlobalInsightCache` |
+| [`backend/analytics/models.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/models.py) | Python (Django) | Analytics Cache Models | `CollegeInsightCache` (dual classifiers, dual clustering fields), `GlobalInsightCache` |
+| [`backend/analytics/serializers.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/serializers.py) | Python (DRF) | Analytics Serialization | `CollegeInsightSerializer` exposing `decisionTreeAccuracy`, `hierarchicalGroupings`, etc. |
+| [`backend/analytics/views.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/views.py) | Python (DRF) | Analytics API Endpoints | `CollegeInsightsView`, `OverviewInsightsView`, `RefreshAnalyticsView` |
 | [`backend/analytics/ml_services/data_loader.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/data_loader.py) | Python (Pandas) | Star Schema $\rightarrow$ Matrix ETL | `load_feedback_wide`, `load_college_category_matrix` |
 | [`backend/analytics/ml_services/regression_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/regression_service.py) | Python (scikit-learn) | Driver Extraction | `train_regression` (Ridge with StandardScaler) |
-| [`backend/analytics/ml_services/classification_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/classification_service.py) | Python (scikit-learn) | Recommendation Probability | `train_classifier`, `predict_recommend_score` (GaussianNB) |
-| [`backend/analytics/ml_services/clustering_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/clustering_service.py) | Python (scikit-learn) | Cohort Segmentation | `run_kmeans` ($k=3$), `cluster_summary_for_college`, `run_agglomerative` |
+| [`backend/analytics/ml_services/classification_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/classification_service.py) | Python (scikit-learn) | Dual Supervised Classification | `train_classifier` (GaussianNB + DecisionTreeClassifier), `predict_recommend_score` |
+| [`backend/analytics/ml_services/clustering_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/clustering_service.py) | Python (scikit-learn) | Dual Unsupervised Clustering | `run_kmeans` ($k=3$), `cluster_summary_for_college`, `run_agglomerative` (Ward's Linkage) |
 | [`backend/analytics/ml_services/association_service.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/ml_services/association_service.py) | Python (mlxtend) | Dependency Mining | `mine_association_rules` (Apriori frequent itemsets) |
+| [`backend/analytics/management/commands/run_analytics_pipeline.py`](file:///d:/Projects/DWMmini/UniMetric/backend/analytics/management/commands/run_analytics_pipeline.py) | Python (Django) | ML Pipeline Command | End-to-end training: Ridge, GNB, Decision Tree, K-Means, Agglomerative, Apriori |
 | [`backend/api/management/commands/seed_mock_data.py`](file:///d:/Projects/DWMmini/UniMetric/backend/api/management/commands/seed_mock_data.py) | Python (Django) | Synthetic Data Seeder | Authentic persona seeding (90 reviews, 11 categories) |
 | [`src/context/RoleContext.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/context/RoleContext.jsx) | JavaScript (React) | Auth & RBAC State | `RoleProvider`, `useRole`, Supabase session sync |
+| [`src/components/common/Navbar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Navbar.jsx) | JavaScript (React) | Top Navigation Bar | Role-specific link gating (Student strictly Home & Submit Feedback) |
+| [`src/components/common/Sidebar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Sidebar.jsx) | JavaScript (React) | Responsive Sidebar | Role-specific routing matching Navbar restrictions |
 | [`src/components/feedback/FeedbackForm.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/feedback/FeedbackForm.jsx) | JavaScript (React) | 5-Part Survey Workflow | 11 categories, conditional hostel switch, validation |
-| [`src/components/compare/CollegeSelector.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/compare/CollegeSelector.jsx) | JavaScript (React) | Instant Search & Select | `onMouseDown` selection fix, keyboard navigation |
 | [`src/pages/CollegeDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/CollegeDashboardPage.jsx) | JavaScript (React) | Institutional Analytics Page | OLAP rollups, sentiment donuts, DWM educational badges |
-| [`src/components/insights/DataDrivenInsightsSection.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/DataDrivenInsightsSection.jsx) | JavaScript (React) | DWM Insights Container | Renders KeyDrivers, Segments, Rules, and Gauge |
+| [`src/components/insights/DataDrivenInsightsSection.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/DataDrivenInsightsSection.jsx) | JavaScript (React) | 5-Widget DWM Container | Houses KeyDrivers, ClassificationComparison, Segments, HierarchicalGroupings, Rules |
+| [`src/components/insights/ClassificationComparisonCard.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/ClassificationComparisonCard.jsx) | JavaScript (React) | Dual Classifier Card | Naive Bayes vs Decision Tree accuracy, recommend gauge, top 3 attributes |
+| [`src/components/insights/HierarchicalGroupingsCard.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/HierarchicalGroupingsCard.jsx) | JavaScript (React) | Agglomerative Splits Card | Ward's linkage cluster splits, branch means, category tags |
 
 ### 7.2 System Verification Summary
 
-The architecture and business rules have been verified through end-to-end testing:
+The architecture, machine learning pipeline, and business rules have been verified through end-to-end testing:
 
 | Verification Suite | Target Component | Validation Criteria | Status |
 |---|---|---|---|
 | **Database Connectivity** | Supabase Session Pooler | PostgreSQL connection established on port 5432 with `sslmode=require` | **VERIFIED** |
-| **Warehouse Integrity** | Star Schema Migrations | All 19 Django migrations applied; dimension foreign keys functional | **VERIFIED** |
-| **Analytical Pipeline** | ML Pipeline Command | `run_analytics_pipeline` executes Ridge, Naive Bayes, K-Means, and Apriori | **VERIFIED** |
-| **Sparse Handling** | Day Scholar Submissions | Day Scholar submissions omit Hostel facts without raising schema exceptions | **VERIFIED** |
-| **Temporal Anti-Spam** | Review Submission API | Submissions in the same academic year are rejected with HTTP 400 | **VERIFIED** |
-| **RBAC Enforcement** | Compare Tool & Admin | Student role is blocked from `/compare`; Admin has access to `/admin` | **VERIFIED** |
-| **UI UX Performance** | Soft Neo-Brutalism UI | Responsive layout, Recharts graphs, and fast dropdown selection | **VERIFIED** |
+| **Warehouse Integrity** | Star Schema Migrations | All Django migrations applied across `api` and `analytics`; foreign keys verified | **VERIFIED** |
+| **Dual Classification** | Supervised Pipeline | GaussianNB & Decision Tree trained, test split accuracies computed, top features extracted | **VERIFIED** |
+| **Dual Clustering** | Unsupervised Pipeline | K-Means ($k=3$) student cohorts and Agglomerative Ward hierarchical splits populated | **VERIFIED** |
+| **Association Rules** | Apriori Mining | Co-occurring low score patterns extracted with Support, Confidence, and Lift | **VERIFIED** |
+| **Sparse Handling** | Day Scholar Submissions | Day Scholar submissions omit Hostel facts without raising schema or null exceptions | **VERIFIED** |
+| **Temporal Anti-Spam** | Review Submission API | Submissions in the same academic year rejected with HTTP 400 | **VERIFIED** |
+| **RBAC Enforcement** | Navigation & Tools | Student restricted to Home and Submit Feedback; Compare tool gated for Prospect | **VERIFIED** |
+| **UI UX Performance** | Soft Neo-Brutalism UI | Responsive 5-widget ML insights grid, SVG gauges, and Recharts graphs rendered | **VERIFIED** |
 
 ---
 
