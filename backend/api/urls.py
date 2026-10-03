@@ -8,7 +8,8 @@ from .views import (
     CollegeDashboardBundleView,
     ProgramViewSet, 
     SubmitReviewView,
-    StudentRegisterView
+    StudentRegisterView,
+    AdminSystemSummaryView
 )
 
 router = DefaultRouter()
@@ -16,6 +17,9 @@ router.register(r'colleges', CollegeViewSet, basename='college')
 router.register(r'programs', ProgramViewSet, basename='program')
 
 urlpatterns = [
+    # Admin system analytics
+    path('admin/system-summary/', AdminSystemSummaryView.as_view(), name='admin-system-summary'),
+
     # Custom endpoints (must come before router.urls to prevent /colleges/<pk>/ from capturing /colleges/compare/)
     path('colleges/compare/', CollegeCompareView.as_view(), name='college-compare'),
     path('colleges/<int:id>/dashboard-bundle/', CollegeDashboardBundleView.as_view(), name='college-dashboard-bundle'),

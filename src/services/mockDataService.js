@@ -347,3 +347,33 @@ export async function getOverviewInsights() {
     throw error;
   }
 }
+
+/**
+ * Fetches macro-level admin system summary (live counts, sentiment breakdown, latest submissions, signups, ML pipeline status)
+ * @returns {Promise<Object>}
+ */
+export async function getAdminSystemSummary() {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/admin/system-summary/`);
+    return res.data;
+  } catch (error) {
+    console.error('API Error [getAdminSystemSummary]: Failed to fetch admin summary:', error);
+    throw error;
+  }
+}
+
+/**
+ * Triggers the Machine Learning pipeline (K-Means, Ridge Regression, Apriori, GaussianNB, Decision Tree).
+ * Invalidates cache and updates ML models.
+ * @returns {Promise<Object>}
+ */
+export async function triggerAnalyticsPipeline() {
+  try {
+    const res = await axios.post(`${API_BASE_URL}/analytics/refresh/`, {});
+    return res.data;
+  } catch (error) {
+    console.error('API Error [triggerAnalyticsPipeline]: Failed to trigger analytics pipeline:', error);
+    throw error;
+  }
+}
+

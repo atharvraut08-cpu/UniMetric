@@ -72,9 +72,12 @@ class RefreshAnalyticsView(views.APIView):
             call_command("run_analytics_pipeline", stdout=out)
             # Clear all cached ML insights and college summaries
             cache.clear()
+            global_cache = GlobalInsightCache.objects.first()
+            last_run = global_cache.computed_at.isoformat() if global_cache else None
             return Response({
                 "status": "success",
                 "output": out.getvalue(),
+                "last_run": last_run,
             })
         except Exception as e:
             return Response({"status": "error", "detail": str(e)}, status=500)

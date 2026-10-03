@@ -1,7 +1,9 @@
+import json
 from rest_framework import viewsets, views, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from django.db.models import Avg, Count, Q, F, ExpressionWrapper
+from django.db import connection
+from django.db.models import Avg, Count, Q, F, ExpressionWrapper, Max
 from django.db.models.functions import Cast
 from django.db.models import FloatField, IntegerField
 from django.core.cache import cache
@@ -12,7 +14,7 @@ from .serializers import (
     ReviewSubmitSerializer, 
     StudentRegistrationSerializer
 )
-from analytics.models import CollegeInsightCache
+from analytics.models import CollegeInsightCache, GlobalInsightCache
 from analytics.serializers import CollegeInsightSerializer
 from datetime import date, datetime
 from django.utils import timezone
@@ -585,4 +587,181 @@ class StudentRegisterView(views.APIView):
 
             return Response(StudentRegistrationSerializer(profile).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminSystemSummaryView(views.APIView):
+    """
+    GET /api/admin/system-summary/
+    Returns macro-level system analytics:
+    - Real database counts (Users, Colleges, Reviews, Facts)
+    - Global sentiment breakdown (counts + percentages)
+    - Latest 10 feedback submissions with full category rating breakdown
+    - Recent user sign-ups
+    - ML pipeline cache status and last execution timestamp
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            # 1. Total counts
+            total_colleges = College.objects.count()
+            total_reviews = FeedbackFact.objects.values('submission_id').distinct().count()
+            total_students = StudentProfile.objects.values('user_id').distinct().count()
+            total_facts = FeedbackFact.objects.count()
+
+            # 2. Registered auth users from auth.users (Supabase) or Django User
+            auth_users_count = 0
+            signups = []
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT count(*) FROM auth.users;")
+                    row = cursor.fetchone()
+                    auth_users_count = row[0] if row else 0
+
+                    cursor.execute("""
+                        SELECT id, email, created_at, raw_user_meta_data 
+                        FROM auth.users 
+                        ORDER BY created_at DESC 
+                        LIMIT 10;
+                    """)
+                    for r in cursor.fetchall():
+                        meta = r[3] if isinstance(r[3], dict) else json.loads(r[3] or '{}')
+                        signups.append({
+                            'id': str(r[0]),
+                            'email': r[1] or '',
+                            'created_at': r[2].isoformat() if r[2] else None,
+                            'role': meta.get('role', 'Student'),
+                            'name': meta.get('full_name') or (r[1].split('@')[0] if r[1] else 'User'),
+                        })
+            except Exception as auth_err:
+                print("Notice: auth.users query skipped or not available:", auth_err)
+                auth_users_count = 0
+
+            # If fewer than 5 signups, augment with recent StudentProfiles for richer activity
+            if len(signups) < 5:
+                recent_profiles = (
+                    StudentProfile.objects.select_related('program', 'program__college')
+                    .order_by('-id')[:5]
+                )
+                for sp in recent_profiles:
+                    sp_id_str = f"sp-{sp.id}"
+                    if not any(s.get('id') == sp_id_str for s in signups):
+                        college_name = sp.program.college.name if sp.program and sp.program.college else "College"
+                        prog_name = sp.program.program_name if sp.program else "Enrolled"
+                        display_name = f"{sp.user_id}" if sp.user_id else f"Student #{sp.id}"
+                        signups.append({
+                            'id': sp_id_str,
+                            'email': f"{sp.user_id or 'student'}@unimetric.internal",
+                            'created_at': sp.admission_date.isoformat() if sp.admission_date else None,
+                            'role': 'Student',
+                            'name': f"{display_name} ({prog_name})",
+                        })
+
+            total_users = max(total_students, auth_users_count)
+
+            # 3. Sentiment breakdown across all unique submissions
+            sentiments = {'positive': 0, 'neutral': 0, 'negative': 0}
+            for item in FeedbackFact.objects.values('submission_id', 'sentiment').distinct():
+                s = (item['sentiment'] or 'NEUTRAL').lower()
+                if s in sentiments:
+                    sentiments[s] += 1
+                else:
+                    sentiments['neutral'] += 1
+
+            total_senti = sum(sentiments.values()) or 1
+            percentages = {
+                k: round((v / total_senti) * 100, 1) for k, v in sentiments.items()
+            }
+
+            # 4. Latest 10 feedback submissions
+            latest_sids = list(
+                FeedbackFact.objects.values('submission_id')
+                .annotate(max_id=Max('id'))
+                .order_by('-max_id')[:10]
+            )
+            sid_list = [item['submission_id'] for item in latest_sids]
+
+            facts = (
+                FeedbackFact.objects.filter(submission_id__in=sid_list)
+                .select_related('college', 'program', 'student_profile', 'category')
+                .order_by('-id')
+            )
+
+            # User map for quick display name resolution
+            user_id_map = {s['id']: s for s in signups}
+
+            submissions_dict = {}
+            for f in facts:
+                sid = str(f.submission_id)
+                if sid not in submissions_dict:
+                    uid = f.user_id or ''
+                    matched_user = user_id_map.get(uid)
+                    if matched_user:
+                        user_display = f"{matched_user['name']} ({matched_user['email']})"
+                    elif f.student_profile:
+                        user_display = f"Student Year {f.student_profile.year_of_study} ({uid or 'Verified'})"
+                    else:
+                        user_display = uid or 'Anonymous Student'
+
+                    submissions_dict[sid] = {
+                        'submission_id': sid,
+                        'college_id': f.college_id,
+                        'college_name': f.college.name if f.college else 'Unknown College',
+                        'college_location': f.college.location if f.college else '',
+                        'college_type': f.college.get_college_type_display() if f.college else '',
+                        'program_id': f.program_id,
+                        'program_name': f.program.program_name if f.program else 'General Feedback',
+                        'user_id': uid,
+                        'user_display': user_display,
+                        'student_year': f.student_profile.get_year_of_study_display() if f.student_profile else '',
+                        'sentiment': (f.sentiment or 'neutral').lower(),
+                        'would_recommend': f.would_recommend,
+                        'positive_feedback': f.positive_feedback or '',
+                        'complaints': f.complaints or '',
+                        'suggestions': f.suggestions or '',
+                        'created_at': f.created_at.isoformat() if f.created_at else None,
+                        'ratings': {},
+                    }
+                if f.category:
+                    submissions_dict[sid]['ratings'][f.category.category_name] = f.score
+
+            submissions = []
+            for sid in [str(s) for s in sid_list]:
+                if sid in submissions_dict:
+                    sub = submissions_dict[sid]
+                    scores = list(sub['ratings'].values())
+                    sub['average_score'] = round(sum(scores) / len(scores), 1) if scores else 0
+                    submissions.append(sub)
+
+            # 5. ML Pipeline Status
+            global_cache = GlobalInsightCache.objects.first()
+            pipeline_status = {
+                'last_run': global_cache.computed_at.isoformat() if global_cache else None,
+                'has_cached_insights': global_cache is not None,
+                'total_cached_colleges': CollegeInsightCache.objects.count(),
+            }
+
+            return Response({
+                'counts': {
+                    'total_users': total_users,
+                    'total_students': total_students,
+                    'total_auth_users': auth_users_count,
+                    'total_colleges': total_colleges,
+                    'total_reviews': total_reviews,
+                    'total_feedback_facts': total_facts,
+                },
+                'sentiment_breakdown': {
+                    'counts': sentiments,
+                    'percentages': percentages,
+                    'total': total_senti,
+                },
+                'latest_submissions': submissions,
+                'recent_signups': signups,
+                'pipeline_status': pipeline_status,
+            })
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({'error': str(e)}, status=500)
+
 
