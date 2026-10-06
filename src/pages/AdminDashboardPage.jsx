@@ -4,13 +4,15 @@ import {
   ShieldCheck, Users, TrendingUp, AlertTriangle,
   ArrowRight, Clock, CheckCircle2, XCircle, MinusCircle,
   GraduationCap, Activity, Sparkles, RefreshCw, Loader2,
-  ExternalLink, ThumbsUp, ThumbsDown, X, Cpu, Database
+  ExternalLink, ThumbsUp, ThumbsDown, X, Cpu, Database,
+  Trophy, Medal, Award, Star, Search, Building2, Lock,
+  ChevronRight, FileCode, Layers, GitBranch
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip
 } from 'recharts';
 import { useRole } from '../context/RoleContext';
-import { getAdminSystemSummary, triggerAnalyticsPipeline } from '../services/mockDataService';
+import { getAdminSystemSummary } from '../services/mockDataService';
 
 /* ─── Sentiment pill styling ─────────────────────────────────── */
 const sentimentStyle = {
@@ -357,9 +359,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ML Pipeline state
-  const [pipelineRunning, setPipelineRunning] = useState(false);
-  const [toast, setToast] = useState(null);
+  // Rankings Filter & Sorting
+  const [rankingSearch, setRankingSearch] = useState('');
+  const [rankingSort, setRankingSort] = useState('rank'); // 'rank', 'rating', 'recommendation', 'reviews', 'composite'
 
   // Modal state
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -392,39 +394,6 @@ export default function AdminDashboardPage() {
     }
   }, [role, fetchSummary]);
 
-  /* Trigger ML Pipeline */
-  const handleRunPipeline = async () => {
-    if (pipelineRunning) return;
-    setPipelineRunning(true);
-    try {
-      await triggerAnalyticsPipeline();
-      setToast({
-        type: 'success',
-        title: 'ML Pipeline Executed Successfully',
-        message: 'K-Means, Ridge Regression, and Apriori association models refreshed.',
-      });
-      // Refresh summary data to update last run timestamp and cache status
-      await fetchSummary();
-    } catch (err) {
-      console.error('Pipeline trigger failed:', err);
-      setToast({
-        type: 'error',
-        title: 'Pipeline Execution Failed',
-        message: err.response?.data?.detail || err.message || 'Error executing analytics pipeline.',
-      });
-    } finally {
-      setPipelineRunning(false);
-    }
-  };
-
-  /* Auto-dismiss toast after 6 seconds */
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 6000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
   /* Don't render until we know the user is Admin */
   if (!isAuthenticated || role !== 'Admin') return null;
 
@@ -446,6 +415,26 @@ export default function AdminDashboardPage() {
   const latestSubmissions = summaryData?.latest_submissions || [];
   const recentSignups = summaryData?.recent_signups || [];
   const pipelineStatus = summaryData?.pipeline_status || null;
+  const collegeRankings = summaryData?.college_rankings || [];
+
+  // Filtered & sorted college rankings
+  const filteredRankings = collegeRankings
+    .filter((c) => {
+      if (!rankingSearch.trim()) return true;
+      const q = rankingSearch.toLowerCase();
+      return (
+        c.name.toLowerCase().includes(q) ||
+        (c.location && c.location.toLowerCase().includes(q)) ||
+        (c.type && c.type.toLowerCase().includes(q))
+      );
+    })
+    .sort((a, b) => {
+      if (rankingSort === 'rating') return b.overall_rating - a.overall_rating;
+      if (rankingSort === 'recommendation') return b.recommendation_percent - a.recommendation_percent;
+      if (rankingSort === 'reviews') return b.total_reviews - a.total_reviews;
+      if (rankingSort === 'composite') return b.composite_score - a.composite_score;
+      return a.rank - b.rank;
+    });
 
   // Pie chart data for Recharts
   const pieData = [
@@ -496,32 +485,6 @@ export default function AdminDashboardPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
 
-      {/* ── Toast Notification ── */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 right-6 z-50 max-w-md p-4 rounded-2xl border shadow-2xl flex items-start gap-3 transition-all animate-fade-in ${
-            toast.type === 'error'
-              ? 'bg-rose-50 border-rose-200 text-rose-900'
-              : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-          }`}
-        >
-          {toast.type === 'error' ? (
-            <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-          ) : (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-          )}
-          <div className="flex-1 text-xs">
-            <p className="font-bold">{toast.title}</p>
-            <p className="mt-0.5 opacity-90">{toast.message}</p>
-          </div>
-          <button
-            onClick={() => setToast(null)}
-            className="p-1 rounded-lg hover:bg-black/5 text-slate-500 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up">
@@ -584,6 +547,243 @@ export default function AdminDashboardPage() {
             <div className="text-slate-500 text-xs mt-0.5 font-medium">{sub}</div>
           </div>
         ))}
+      </div>
+
+      {/* ── College Rankings Leaderboard (Admin Only) ── */}
+      <div className="glass-card overflow-hidden border border-brand-charcoal/10 animate-fade-in-up delay-150">
+        <div className="p-6 border-b border-brand-charcoal/10 bg-brand-cream/30 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-soft">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-extrabold text-brand-charcoal tracking-tight">
+                    Institutional College Rankings
+                  </h2>
+                  <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 shadow-2xs">
+                    <Lock className="w-3 h-3 text-amber-700" />
+                    Admin Only
+                  </span>
+                </div>
+                <p className="text-slate-500 text-xs font-medium mt-0.5">
+                  Algorithmic institutional index benchmarked across ratings, student recommendation %, and verified review volume.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Controls: Search & Sort */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative min-w-[200px]">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search college, location..."
+                value={rankingSearch}
+                onChange={(e) => setRankingSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-white/80 border border-brand-charcoal/15 rounded-xl placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20"
+              />
+            </div>
+
+            <div className="flex items-center gap-1 p-1 bg-white/60 border border-brand-charcoal/10 rounded-xl text-xs font-semibold">
+              {[
+                { id: 'rank', label: 'Rank' },
+                { id: 'composite', label: 'Score' },
+                { id: 'rating', label: 'Rating' },
+                { id: 'recommendation', label: 'Recommend' },
+                { id: 'reviews', label: 'Reviews' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setRankingSort(tab.id)}
+                  className={`px-2.5 py-1 rounded-lg transition-all ${
+                    rankingSort === tab.id
+                      ? 'bg-brand-charcoal text-white shadow-soft font-bold'
+                      : 'text-slate-600 hover:text-brand-charcoal hover:bg-black/5'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-brand-charcoal/10 text-[11px] uppercase tracking-wider text-slate-500 bg-brand-cream/10">
+                <th className="py-3 px-4 font-bold text-center w-16">Rank</th>
+                <th className="py-3 px-4 font-bold">Institution</th>
+                <th className="py-3 px-4 font-bold text-center">Score Index</th>
+                <th className="py-3 px-4 font-bold text-center">Overall Rating</th>
+                <th className="py-3 px-4 font-bold text-center">Recommend %</th>
+                <th className="py-3 px-4 font-bold text-center">Reviews</th>
+                <th className="py-3 px-4 font-bold">Academic Pillars</th>
+                <th className="py-3 px-4 font-bold">Primary ML Driver</th>
+                <th className="py-3 px-4 font-bold text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brand-charcoal/10 text-xs">
+              {loading && !filteredRankings.length ? (
+                <tr>
+                  <td colSpan={9} className="py-12 text-center text-slate-500">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-brand-coral" />
+                    <span>Calculating institutional rankings...</span>
+                  </td>
+                </tr>
+              ) : filteredRankings.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-8 text-center text-slate-500">
+                    No colleges match your search criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredRankings.map((col) => {
+                  const isTop1 = col.rank === 1;
+                  const isTop2 = col.rank === 2;
+                  const isTop3 = col.rank === 3;
+
+                  return (
+                    <tr
+                      key={col.id}
+                      onClick={() => navigate(`/colleges/${col.id}`)}
+                      className="hover:bg-brand-cream/30 cursor-pointer transition-colors group"
+                    >
+                      {/* Rank Column */}
+                      <td className="py-3.5 px-4 text-center">
+                        {isTop1 ? (
+                          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-extrabold shadow-soft" title="Rank #1">
+                            <Trophy className="w-4 h-4 text-amber-600" />
+                          </div>
+                        ) : isTop2 ? (
+                          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-800 border border-slate-300 font-extrabold shadow-soft" title="Rank #2">
+                            <Medal className="w-4 h-4 text-slate-500" />
+                          </div>
+                        ) : isTop3 ? (
+                          <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-extrabold shadow-soft" title="Rank #3">
+                            <Award className="w-4 h-4 text-amber-700" />
+                          </div>
+                        ) : (
+                          <span className="font-bold text-slate-500">
+                            #{col.rank}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* College Name & Details */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-extrabold text-brand-charcoal text-sm group-hover:text-brand-coral transition-colors">
+                          {col.name}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-slate-500 text-[11px] font-medium">
+                          <span>{col.location}</span>
+                          <span>•</span>
+                          <span className="px-1.5 py-0.2 rounded bg-brand-cream border border-brand-charcoal/10 text-slate-600 text-[10px] font-semibold">
+                            {col.type}
+                          </span>
+                          <span>•</span>
+                          <span>{col.programs_count} Programs</span>
+                        </div>
+                      </td>
+
+                      {/* Composite Score & Grade */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-extrabold text-brand-charcoal">
+                            {col.composite_score}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.2 rounded-full border mt-0.5 ${
+                            col.grade === 'A+' ? 'bg-emerald-50 text-emerald-800 border-emerald-200 font-extrabold' :
+                            col.grade === 'A' ? 'bg-teal-50 text-teal-800 border-teal-200 font-bold' :
+                            col.grade === 'B+' ? 'bg-blue-50 text-blue-800 border-blue-200 font-bold' :
+                            'bg-amber-50 text-amber-800 border-amber-200 font-bold'
+                          }`}>
+                            Grade {col.grade}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Overall Rating */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="inline-flex items-center gap-1 font-bold text-brand-charcoal bg-amber-50/80 px-2.5 py-1 rounded-xl border border-amber-200/80">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                          <span>{col.overall_rating.toFixed(1)}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">/5</span>
+                        </div>
+                      </td>
+
+                      {/* Recommend % */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200">
+                          <ThumbsUp className="w-3 h-3 text-emerald-600" />
+                          <span>{col.recommendation_percent}%</span>
+                        </div>
+                      </td>
+
+                      {/* Review Volume */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="font-semibold text-slate-600 bg-brand-cream/80 px-2 py-0.5 rounded-lg border border-brand-charcoal/5">
+                          {col.total_reviews} reviews
+                        </span>
+                      </td>
+
+                      {/* Academic Pillars */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span title="Teaching Quality" className="px-1.5 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold">
+                            Teach: {col.teaching_quality || '—'}
+                          </span>
+                          <span title="Placements & Career" className="px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
+                            Place: {col.career_placements || '—'}
+                          </span>
+                          <span title="Infrastructure" className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 font-semibold">
+                            Infra: {col.infrastructure || '—'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Primary ML Driver */}
+                      <td className="py-3.5 px-4">
+                        {col.top_driver ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium text-[11px]">
+                            <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                            {col.top_driver}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">—</span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/colleges/${col.id}`);
+                          }}
+                          className="px-2.5 py-1 rounded-xl text-slate-500 hover:text-brand-charcoal hover:bg-brand-charcoal/10 transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
+                          title="Open college profile"
+                        >
+                          <span>Profile</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-4 border-t border-brand-charcoal/10 bg-brand-cream/10 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span>Ranking index is computed via weighted formulation: 55% Rating + 35% Recommendation % + 10% Review Volume Credibility.</span>
+          <span className="font-semibold text-brand-charcoal/70">{filteredRankings.length} colleges listed</span>
+        </div>
       </div>
 
       {/* ── Activity + Quick Stats Row ── */}
@@ -764,83 +964,179 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* ── ML Pipeline Control Center ── */}
+      {/* ── ML Pipeline Intelligence Engine Architecture ── */}
       <div className="glass-card p-6 border border-brand-charcoal/10 animate-fade-in-up delay-300">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-soft">
-                <Cpu className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-extrabold text-brand-charcoal tracking-tight flex items-center gap-2">
-                  Machine Learning Intelligence Engine
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Online
-                  </span>
-                </h3>
-                <p className="text-slate-600 text-xs font-medium">
-                  Trains and refreshes K-Means Student Clusters, Ridge Driver Regression, Apriori Association Rules, and Decision Tree Models.
-                </p>
-              </div>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-5 border-b border-brand-charcoal/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-soft">
+              <Cpu className="w-5 h-5" />
             </div>
-
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>
-                  Last execution:{' '}
-                  <strong className="text-brand-charcoal">
-                    {formatFullDateTime(pipelineStatus?.last_run)}
-                  </strong>{' '}
-                  ({formatRelativeTime(pipelineStatus?.last_run)})
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-extrabold text-brand-charcoal tracking-tight">
+                  Machine Learning Intelligence Engine
+                </h3>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Online
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-slate-400" />
-                <span>
-                  Supabase Cache:{' '}
-                  <strong className="text-emerald-700 font-semibold">
-                    {pipelineStatus?.total_cached_colleges || counts.total_colleges} colleges pre-computed
-                  </strong>
-                </span>
-              </div>
+              <p className="text-slate-500 text-xs font-medium">
+                Autonomous analytical models pre-computing multi-dimensional insights for high-throughput query delivery (&lt;100ms)
+              </p>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <button
-              onClick={handleRunPipeline}
-              disabled={pipelineRunning}
-              className={`px-5 py-3 rounded-2xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-soft ${
-                pipelineRunning
-                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed border border-slate-300'
-                  : 'bg-brand-charcoal text-white hover:bg-black hover-lift border border-brand-charcoal active:scale-95'
-              }`}
-            >
-              {pipelineRunning ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-brand-coral" />
-                  <span>Processing ML Pipeline...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 text-brand-yellow" />
-                  <span>Run ML Pipeline</span>
-                </>
-              )}
-            </button>
+          {/* Telemetry Chips */}
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-cream/60 border border-brand-charcoal/10 text-slate-600">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span>
+                Last execution: <strong className="text-brand-charcoal font-semibold">{formatFullDateTime(pipelineStatus?.last_run)}</strong> ({formatRelativeTime(pipelineStatus?.last_run)})
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800">
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              <span>
+                Supabase / PostgreSQL Cache: <strong>{pipelineStatus?.total_cached_colleges || counts.total_colleges} colleges pre-computed</strong>
+              </span>
+            </div>
           </div>
         </div>
 
-        {pipelineRunning && (
-          <div className="mt-4 p-3.5 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-xs text-indigo-900 flex items-center gap-3 animate-pulse">
-            <Loader2 className="w-4 h-4 animate-spin text-indigo-600 flex-shrink-0" />
-            <span>
-              Synchronously executing K-Means Clustering, Ridge Driver Regression, GaussianNB, and Apriori Association Rules. Insight caches will update automatically...
+        {/* Structured Model Implementations Directory */}
+        <div className="mt-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-brand-charcoal/70" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Deployed Models & Implementation Directory
+              </h4>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-400 font-mono">
+              backend/analytics/ml_services/
             </span>
           </div>
-        )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Card 1: Ridge Regression */}
+            <div className="p-4 rounded-2xl bg-white/70 border border-brand-charcoal/10 hover:border-brand-charcoal/25 transition-all shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    Regression
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-400">L2 Regularized</span>
+                </div>
+                <h5 className="text-xs font-extrabold text-brand-charcoal mb-1">
+                  Ridge Driver Regression
+                </h5>
+                <p className="text-[11px] text-slate-600 leading-relaxed font-medium mb-3">
+                  Calculates standardized feature weights (&beta; coefficients) ranking which criteria most heavily drive overall institutional ratings.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-brand-charcoal/5 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                <span className="flex items-center gap-1 truncate text-slate-600 font-semibold" title="backend/analytics/ml_services/regression_service.py">
+                  <FileCode className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                  regression_service.py
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-sans font-bold">Target: rating</span>
+              </div>
+            </div>
+
+            {/* Card 2: K-Means Clustering */}
+            <div className="p-4 rounded-2xl bg-white/70 border border-brand-charcoal/10 hover:border-brand-charcoal/25 transition-all shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                    Clustering
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-400">k = 3 Personas</span>
+                </div>
+                <h5 className="text-xs font-extrabold text-brand-charcoal mb-1">
+                  K-Means & Agglomerative
+                </h5>
+                <p className="text-[11px] text-slate-600 leading-relaxed font-medium mb-3">
+                  Segments student cohorts into behavioral personas (Satisfied, Moderate, Dissatisfied) and maps category hierarchical dendrograms.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-brand-charcoal/5 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                <span className="flex items-center gap-1 truncate text-slate-600 font-semibold" title="backend/analytics/ml_services/clustering_service.py">
+                  <FileCode className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                  clustering_service.py
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-sans font-bold">Unsupervised</span>
+              </div>
+            </div>
+
+            {/* Card 3: Apriori Association */}
+            <div className="p-4 rounded-2xl bg-white/70 border border-brand-charcoal/10 hover:border-brand-charcoal/25 transition-all shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    Rule Mining
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-400">mlxtend</span>
+                </div>
+                <h5 className="text-xs font-extrabold text-brand-charcoal mb-1">
+                  Apriori Association Rules
+                </h5>
+                <p className="text-[11px] text-slate-600 leading-relaxed font-medium mb-3">
+                  Mines frequent itemsets of student pain points (scores &le; 2) to uncover co-occurring grievances with confidence &amp; lift metrics.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-brand-charcoal/5 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                <span className="flex items-center gap-1 truncate text-slate-600 font-semibold" title="backend/analytics/ml_services/association_service.py">
+                  <FileCode className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                  association_service.py
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-sans font-bold">Confidence/Lift</span>
+              </div>
+            </div>
+
+            {/* Card 4: Dual Classification */}
+            <div className="p-4 rounded-2xl bg-white/70 border border-brand-charcoal/10 hover:border-brand-charcoal/25 transition-all shadow-xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Classification
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-400">Dual Engine</span>
+                </div>
+                <h5 className="text-xs font-extrabold text-brand-charcoal mb-1">
+                  Naive Bayes & Decision Tree
+                </h5>
+                <p className="text-[11px] text-slate-600 leading-relaxed font-medium mb-3">
+                  GaussianNB computes recommendation probability, while Decision Tree isolates the top 3 highest Information Gain split features.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-brand-charcoal/5 flex items-center justify-between text-[11px] font-mono text-slate-500">
+                <span className="flex items-center gap-1 truncate text-slate-600 font-semibold" title="backend/analytics/ml_services/classification_service.py">
+                  <FileCode className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  classification_service.py
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-sans font-bold">Entropy / CART</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pipeline Orchestration & Cache Storage Architecture */}
+          <div className="mt-4 p-4 rounded-2xl bg-brand-cream/50 border border-brand-charcoal/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <GitBranch className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+              <span className="text-slate-600 font-medium">
+                Pipeline Command & Ingestion:
+                <code className="ml-1.5 px-2 py-0.5 rounded bg-white font-mono text-[11px] text-brand-charcoal border border-brand-charcoal/10">
+                  backend/analytics/management/commands/run_analytics_pipeline.py
+                </code>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 flex-shrink-0">
+              <Database className="w-3.5 h-3.5 text-slate-400" />
+              <span>Storage Table: <strong className="font-mono text-brand-charcoal">CollegeInsightCache</strong></span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── Feedback Detail Modal ── */}

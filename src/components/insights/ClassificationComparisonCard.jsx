@@ -107,7 +107,7 @@ export default function ClassificationComparisonCard({
                       key={index}
                       className="bg-brand-cream/80 rounded-xl px-2.5 py-1.5 border border-brand-charcoal/10 text-xs flex items-center justify-between"
                     >
-                      <div className="flex items-center gap-1.5 truncate max-w-[130px]">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0 pr-2">
                         <span className="w-4 h-4 rounded-full bg-brand-charcoal text-brand-paper text-[10px] font-bold flex items-center justify-center shrink-0">
                           {index + 1}
                         </span>

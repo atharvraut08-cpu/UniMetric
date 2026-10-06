@@ -741,6 +741,73 @@ class AdminSystemSummaryView(views.APIView):
                 'total_cached_colleges': CollegeInsightCache.objects.count(),
             }
 
+            # 6. Admin Institutional College Rankings
+            all_colleges = College.objects.all().prefetch_related('programs')
+            summary_view = CollegeSummaryView()
+            insights_map = {
+                ic.college_id: ic
+                for ic in CollegeInsightCache.objects.all()
+            }
+
+            college_rank_list = []
+            for col in all_colleges:
+                summ = summary_view._get_summary(col)
+                tot_reviews = summ.get('totalReviews', 0)
+                overall_rtg = summ.get('overallRating', 0)
+                rec_pct = summ.get('recommendationPercent', 0)
+
+                # Composite Institutional Score (0 - 100)
+                # 55% Overall Rating (scale 0-5), 35% Recommendation Rate, 10% Review Volume Credibility Factor
+                review_credibility = min(tot_reviews / 25.0, 1.0) * 10.0
+                comp_score = round(((overall_rtg / 5.0) * 55.0) + ((rec_pct / 100.0) * 35.0) + review_credibility, 1) if tot_reviews > 0 else 0.0
+
+                # Institutional Tier / Grade
+                if comp_score >= 88:
+                    grade = 'A+'
+                elif comp_score >= 78:
+                    grade = 'A'
+                elif comp_score >= 68:
+                    grade = 'B+'
+                elif comp_score >= 58:
+                    grade = 'B'
+                elif comp_score >= 48:
+                    grade = 'C+'
+                else:
+                    grade = 'C'
+
+                ic = insights_map.get(col.id)
+                top_driver = None
+                if ic and ic.key_drivers and len(ic.key_drivers) > 0:
+                    top_driver = ic.key_drivers[0].get('category')
+
+                college_rank_list.append({
+                    'id': col.id,
+                    'name': col.name,
+                    'location': col.location,
+                    'type': col.get_college_type_display(),
+                    'overall_rating': overall_rtg,
+                    'recommendation_percent': rec_pct,
+                    'total_reviews': tot_reviews,
+                    'composite_score': comp_score,
+                    'grade': grade,
+                    'teaching_quality': summ.get('ratings', {}).get('teachingQuality', 0),
+                    'career_placements': summ.get('ratings', {}).get('careerPlacements', 0),
+                    'infrastructure': summ.get('ratings', {}).get('infrastructure', {}).get('overall', 0),
+                    'sentiment_distribution': summ.get('sentimentDistribution', {}),
+                    'top_driver': top_driver,
+                    'programs_count': len(summ.get('programs', [])),
+                })
+
+            # Sort colleges by composite_score desc, then overall_rating desc, then total_reviews desc
+            college_rank_list.sort(
+                key=lambda x: (x['composite_score'], x['overall_rating'], x['total_reviews']),
+                reverse=True
+            )
+
+            # Assign 1-indexed ranks
+            for idx, item in enumerate(college_rank_list, start=1):
+                item['rank'] = idx
+
             return Response({
                 'counts': {
                     'total_users': total_users,
@@ -758,6 +825,7 @@ class AdminSystemSummaryView(views.APIView):
                 'latest_submissions': submissions,
                 'recent_signups': signups,
                 'pipeline_status': pipeline_status,
+                'college_rankings': college_rank_list,
             })
         except Exception as e:
             import traceback

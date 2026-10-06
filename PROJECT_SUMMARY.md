@@ -229,7 +229,7 @@ Authentication is powered by **Supabase Auth** with full session persistence acr
 |---|---|
 | **Prospect** (Guest) | • Browse college listings & search<br>• View college scorecards & review text<br>• View platform KPIs on Home Page |
 | **Student** (Verified Enrolled) | • All Prospect permissions<br>• Access to **Compare Page** (Side-by-side analysis)<br>• Access to **Submit Feedback Form** (Restricted to 1 submission per verified user) |
-| **Admin** | • All Student permissions<br>• Access to **Admin Dashboard** (`/admin`)<br>• Real-time system activity and submission logs<br>• Analytics pipeline refresh triggers |
+| **Admin** | • All Student permissions<br>• Access to **Admin Dashboard** (`/admin`)<br>• Real-time system activity and submission logs<br>• Algorithmic College Rankings and ML Telemetry |
 
 ---
 

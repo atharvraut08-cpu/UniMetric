@@ -97,3 +97,26 @@ Following the user request to configure **Supabase** for database hosting and au
 | **Supabase Auth** | Live sign-in with verified test user (`Alex Rivera`) | **Passed** (Session hydrated, Navbar shows user) |
 | **Compare Page** | Interactive selection of College A & College B in browser | **Passed** (Side-by-side metrics & ML charts render) |
 | **Process Cleanup** | Terminated Vite and Django background servers | **Passed** (Ports 5173 and 8000 released cleanly) |
+
+---
+
+## 6. Admin Dashboard Rework & Institutional Rankings (Latest Updates)
+
+### A. Algorithmic College Rankings
+- **File**: [`backend/api/views.py`](file:///d:/Projects/DWMmini/UniMetric/backend/api/views.py)
+- **Implementation**:
+  - Engineered an Institutional College Rankings system within `AdminSystemSummaryView`.
+  - Rankings are powered by a composite score formula: **55% Scaled Overall Rating + 35% Recommendation % + 10% Review Volume Credibility** (capped at 100%).
+  - Provides institutional grading (`A+`, `A`, `B+`, etc.) mitigating small-sample size biases.
+
+### B. Admin Dashboard UI Restructure
+- **File**: [`src/pages/AdminDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/AdminDashboardPage.jsx)
+- **Implementation**:
+  - Removed the manual "Run ML Pipeline" trigger button.
+  - Replaced it with an **ML Intelligence Engine Telemetry** UI, providing a structured directory of deployed models (Ridge Regression, K-Means, Apriori, Dual Classification) alongside active Supabase caching metrics.
+  - Built a dynamic, searchable, and sortable **Institutional College Rankings** leaderboard strictly gated for Admin users.
+
+### C. Admin Dashboard Rendering Bug Fix
+- **File**: [`src/pages/AdminDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/AdminDashboardPage.jsx)
+- **Problem**: When the ML Pipeline button was removed, its `toast` state hooks were removed but the JSX rendering block was left behind, throwing a `ReferenceError: toast is not defined` and crashing the page.
+- **Fix**: Removed the leftover Toast Notification JSX block to restore full compilation and dashboard rendering.

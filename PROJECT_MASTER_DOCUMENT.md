@@ -1,7 +1,7 @@
 # UniMetric: Project Master Document
 ## Data Warehousing & Data Mining (DWM) Institutional Analytics Platform
 
-> **Document Version**: 2.1.0  
+> **Document Version**: 2.2.0  
 > **System Status**: Production-Ready / Fully Integrated  
 > **Target Domain**: Higher Education Analytics, Academic Quality Assurance, and Student Decision Support  
 > **Core Paradigms**: Multidimensional Star Schema (OLAP), Data Mining, Dual Unsupervised Clustering (K-Means & Agglomerative Hierarchical), Dual Supervised Classification (Gaussian Naive Bayes & Decision Tree / ID3-CART), Association Rule Mining (Apriori), Key Driver Extraction (Ridge Regression), Soft Neo-Brutalism UI  
@@ -249,7 +249,7 @@ UniMetric defines three distinct security and operational roles, enforced via cl
    - **Submission Entitlement**: Permitted to submit feedback once per verified academic year (`/submit-feedback`).
 3. **Admin (Institutional Analyst / System Auditor)**:
    - **Intent**: Data auditor and quality assurance officer.
-   - **Permissions**: Unrestricted access across all pages, including the `/admin` portal ([`AdminDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/AdminDashboardPage.jsx)) displaying real-time submission logs, database counts, and the manual pipeline trigger `POST /api/analytics/refresh/`.
+   - **Permissions**: Unrestricted access across all pages, including the `/admin` portal ([`AdminDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/AdminDashboardPage.jsx)). The Admin Dashboard features real-time submission logs, ML Intelligence Engine telemetry (caching status and model directories), and an exclusive **Institutional College Rankings** leaderboard driven by a weighted algorithmic composite score (55% Rating + 35% Recommend% + 10% Review Volume Credibility).
 
 ### 4.2 Backend Data Integrity & Anti-Spam Business Logic
 
@@ -489,6 +489,16 @@ Rendered in [`DataDrivenInsightsSection.jsx`](file:///d:/Projects/DWMmini/UniMet
 
 ---
 
+### 6.4 Admin Dashboard & Institutional Rankings
+The Admin Dashboard ([`AdminDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/AdminDashboardPage.jsx)) serves as the centralized telemetry and analytics hub exclusively for Institutional Analysts.
+1. **Algorithmic Institutional Rankings**: A dynamic, searchable leaderboard exclusively visible to admins. Colleges are ranked based on a **Composite Score Index**:
+   $$\text{Composite Score} = (0.55 \times \text{Scaled Overall Rating}) + (0.35 \times \text{Recommend \%}) + (0.10 \times \text{Volume Credibility})$$
+   This mitigates the small-sample-size bias where a college with one 5-star review outranks a college with a thousand 4.8-star reviews.
+2. **ML Intelligence Engine Telemetry**: A structured architectural view exposing the exact deployment configurations, file targets, and caching status (e.g., Supabase/PostgreSQL pre-computed insights) for the Ridge Regression, K-Means, Apriori, and Dual Classification models.
+3. **Live Activity Stream**: Real-time monitoring of global student feedback submissions with sentiment pill tagging and quick-access qualitative review modals.
+
+---
+
 ## 7. Repository File Matrix & Verification
 
 ### 7.1 Key Source Files & Component Responsibilities
@@ -513,6 +523,7 @@ Rendered in [`DataDrivenInsightsSection.jsx`](file:///d:/Projects/DWMmini/UniMet
 | [`src/components/common/Sidebar.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/common/Sidebar.jsx) | JavaScript (React) | Responsive Sidebar | Role-specific routing matching Navbar restrictions |
 | [`src/components/feedback/FeedbackForm.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/feedback/FeedbackForm.jsx) | JavaScript (React) | 5-Part Survey Workflow | 11 categories, conditional hostel switch, validation |
 | [`src/pages/CollegeDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/CollegeDashboardPage.jsx) | JavaScript (React) | Institutional Analytics Page | OLAP rollups, sentiment donuts, DWM educational badges |
+| [`src/pages/AdminDashboardPage.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/pages/AdminDashboardPage.jsx) | JavaScript (React) | Admin Telemetry & Rankings | Algorithmic leaderboard, ML engine telemetry, live activity stream |
 | [`src/components/insights/DataDrivenInsightsSection.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/DataDrivenInsightsSection.jsx) | JavaScript (React) | 5-Widget DWM Container | Houses KeyDrivers, ClassificationComparison, Segments, HierarchicalGroupings, Rules |
 | [`src/components/insights/ClassificationComparisonCard.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/ClassificationComparisonCard.jsx) | JavaScript (React) | Dual Classifier Card | Naive Bayes vs Decision Tree accuracy, recommend gauge, top 3 attributes |
 | [`src/components/insights/HierarchicalGroupingsCard.jsx`](file:///d:/Projects/DWMmini/UniMetric/src/components/insights/HierarchicalGroupingsCard.jsx) | JavaScript (React) | Agglomerative Splits Card | Ward's linkage cluster splits, branch means, category tags |
