@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, Users, TrendingUp, AlertTriangle,
-  ArrowRight, Clock, CheckCircle2, XCircle, MinusCircle,
+  Clock, CheckCircle2, XCircle, MinusCircle,
   GraduationCap, Activity, Sparkles, RefreshCw, Loader2,
   ExternalLink, ThumbsUp, ThumbsDown, X, Cpu, Database,
   Trophy, Medal, Award, Star, Search, Building2, Lock,
@@ -536,11 +536,10 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 animate-fade-in-up delay-100">
         {statCards.map(({ icon: Icon, label, value, sub, iconBg }) => (
           <div key={label} className="glass-card p-6 border border-brand-charcoal/10 hover-lift">
-            <div className="flex items-start justify-between mb-4">
+            <div className="mb-4">
               <div className={`w-10 h-10 rounded-2xl border ${iconBg} flex items-center justify-center shadow-soft`}>
                 <Icon className="w-5 h-5" />
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400" />
             </div>
             <div className="text-3xl font-extrabold text-brand-charcoal mb-1">{value}</div>
             <div className="text-brand-charcoal text-sm font-bold">{label}</div>
@@ -650,7 +649,7 @@ export default function AdminDashboardPage() {
                   return (
                     <tr
                       key={col.id}
-                      onClick={() => navigate(`/colleges/${col.id}`)}
+                      onClick={() => navigate(`/college/${col.id}`)}
                       className="hover:bg-brand-cream/30 cursor-pointer transition-colors group"
                     >
                       {/* Rank Column */}
@@ -763,7 +762,7 @@ export default function AdminDashboardPage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/colleges/${col.id}`);
+                            navigate(`/college/${col.id}`);
                           }}
                           className="px-2.5 py-1 rounded-xl text-slate-500 hover:text-brand-charcoal hover:bg-brand-charcoal/10 transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
                           title="Open college profile"
@@ -819,7 +818,7 @@ export default function AdminDashboardPage() {
                     key={item.submission_id}
                     item={item}
                     onSelect={setSelectedSubmission}
-                    onNavigateCollege={(id) => navigate(`/colleges/${id}`)}
+                    onNavigateCollege={(id) => navigate(`/college/${id}`)}
                   />
                 ))
               )}
@@ -1144,7 +1143,7 @@ export default function AdminDashboardPage() {
         <FeedbackDetailModal
           item={selectedSubmission}
           onClose={() => setSelectedSubmission(null)}
-          onNavigateCollege={(id) => navigate(`/colleges/${id}`)}
+          onNavigateCollege={(id) => navigate(`/college/${id}`)}
         />
       )}
 

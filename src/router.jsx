@@ -21,6 +21,7 @@ const router = createBrowserRouter([
       { index: true,             element: <HomePage />             },
       { path: 'dashboard',       element: <CollegeDashboardPage /> },
       { path: 'college/:id',     element: <CollegeDashboardPage /> },
+      { path: 'colleges/:id',    element: <CollegeDashboardPage /> },
       { path: 'compare',         element: <ComparePage />          },
       { path: 'submit-feedback', element: <SubmitFeedbackPage />   },
       { path: 'admin',           element: <AdminDashboardPage />   },
