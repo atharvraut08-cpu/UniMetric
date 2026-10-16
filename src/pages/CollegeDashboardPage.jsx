@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, MapPin, Building2, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
 import {
@@ -13,7 +13,8 @@ import CategoryPerformanceChart from '../components/dashboard/CategoryPerformanc
 import InfrastructureBreakdownChart from '../components/dashboard/InfrastructureBreakdownChart';
 import SentimentPieChart from '../components/dashboard/SentimentPieChart';
 import FeedbackLists from '../components/dashboard/FeedbackLists';
-import DataDrivenInsightsSection from '../components/insights/DataDrivenInsightsSection';
+// Heavy ML-insights charts load after the main dashboard has rendered.
+const DataDrivenInsightsSection = lazy(() => import('../components/insights/DataDrivenInsightsSection'));
 
 const typeColors = {
   Private:    'bg-brand-purple/40 text-brand-charcoal border border-brand-charcoal/15',
@@ -228,12 +229,14 @@ export default function CollegeDashboardPage() {
 
       {/* ── Row 4: Data-Driven ML Insights ── */}
       <div className="animate-fade-in-up delay-400">
-        <DataDrivenInsightsSection
-          collegeId={effectiveId}
-          collegeName={college.name}
-          initialInsights={insights}
-          showDWM={showDWM}
-        />
+        <Suspense fallback={<div className="h-64 rounded-3xl bg-brand-charcoal/5 animate-pulse" />}>
+          <DataDrivenInsightsSection
+            collegeId={effectiveId}
+            collegeName={college.name}
+            initialInsights={insights}
+            showDWM={showDWM}
+          />
+        </Suspense>
       </div>
     </div>
   );

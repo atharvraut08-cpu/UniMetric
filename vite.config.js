@@ -26,13 +26,25 @@ const httpsAgent = new https.Agent({ lookup: dnsLookup });
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const supabaseUrl = env.VITE_SUPABASE_URL || 'https://[PROJECT_REF].supabase.co';
+  const supabaseUrl = env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
 
   return {
     plugins: [
       react(),
       tailwindcss(),
     ],
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              { name: 'supabase', test: /node_modules[\/]@supabase/, priority: 20 },
+              { name: 'vendor', test: /node_modules[\/](react|react-dom|react-router|react-router-dom|scheduler|axios)[\/]/, priority: 10 },
+            ],
+          },
+        },
+      },
+    },
     server: {
       proxy: {
         '/supabase-proxy': {

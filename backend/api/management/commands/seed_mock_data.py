@@ -386,7 +386,7 @@ class Command(BaseCommand):
             "Stagger lunch timings across branches to reduce canteen crowding."
         ]
 
-        # 7. Generate 55 to 75 reviews per college (600+ reviews total)
+        # 7. Generate 200 to 250 reviews per college (2000-2500 reviews total, ~25k fact rows, ~15 MB)
         facts_to_create = []
         total_review_count = 0
 
@@ -397,8 +397,8 @@ class Command(BaseCommand):
             mostly_day = spec.get("mostly_day_scholars", False)
             col_programs = programs_by_college[college.id]
 
-            # Generate between 55 and 75 reviews per college
-            num_reviews_for_college = random.randint(58, 72)
+            # Generate between 200 and 250 reviews per college (2000-2500 reviews total)
+            num_reviews_for_college = random.randint(200, 250)
 
             for rep in range(num_reviews_for_college):
                 total_review_count += 1

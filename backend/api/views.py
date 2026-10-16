@@ -58,9 +58,80 @@ def calculate_year_of_study(admission_date, reference_date=None):
     calc_year = (months_diff // 12) + 1
     return str(min(max(calc_year, 1), 4))
 
+
+CACHE_TTL = 3600  # seconds; entries are dropped explicitly when a review is submitted
+
+YEAR_LABELS = dict(StudentProfile.YEAR_CHOICES)
+
+
+def fetch_college_fact_rows(college_id):
+    """
+    Two lean queries that feed both the summary and the review list.
+
+    Every category row of a submission repeats the same text/sentiment columns, so the
+    text is fetched once per submission (DISTINCT ON) instead of once per category row.
+    Returns (score_rows, submission_rows).
+    """
+    facts = FeedbackFact.objects.filter(college_id=college_id)
+    score_rows = list(facts.values('submission_id', 'category__category_name', 'score'))
+    submission_rows = list(
+        facts.order_by('submission_id', '-id').distinct('submission_id').values(
+            'submission_id', 'would_recommend', 'sentiment',
+            'positive_feedback', 'complaints', 'suggestions',
+            'student_profile__year_of_study', 'program__program_name',
+        )
+    )
+    return score_rows, submission_rows
+
+
+def build_reviews(college_id, fact_rows):
+    score_rows, submission_rows = fact_rows
+    reviews_map = {}
+    for f in submission_rows:
+        sid = str(f['submission_id'])
+        reviews_map[sid] = {
+            "id": sid,
+            "collegeId": college_id,
+            "studentYear": YEAR_LABELS.get(f['student_profile__year_of_study'], ""),
+            "program": f['program__program_name'] or "",
+            "ratings": {},
+            "sentiment": (f['sentiment'] or "NEUTRAL").lower(),
+            "comment": f['positive_feedback'] or f['complaints'] or f['suggestions'] or "",
+        }
+
+    for f in score_rows:
+        review = reviews_map.get(str(f['submission_id']))
+        cat_name = f['category__category_name'] or ""
+        if review is None or not cat_name:
+            continue
+        ratings = review['ratings']
+        score = f['score']
+        if cat_name == 'Teaching Quality':
+            ratings['teachingQuality'] = score
+        elif cat_name in ('Infra — Quality of Equipment', 'Labs'):
+            ratings['labs'] = score
+        elif cat_name in ('Wi-Fi & Connectivity', 'Wi-Fi'):
+            ratings['wifi'] = score
+        elif cat_name in ('Hostel & Accommodation', 'Hostel'):
+            ratings['hostel'] = score
+        elif cat_name in ('Placements & Opportunities', 'Career Placements'):
+            ratings['careerPlacements'] = score
+        ratings[cat_name] = score
+    return list(reviews_map.values())
+
+
 class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CollegeListSerializer
     permission_classes = [AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        if request.query_params:
+            return super().list(request, *args, **kwargs)
+        cached = cache.get("college_list")
+        if cached is None:
+            cached = super().list(request, *args, **kwargs).data
+            cache.set("college_list", cached, timeout=CACHE_TTL)
+        return Response(cached)
 
     def get_queryset(self):
         # Prefetch programs to avoid N+1 queries in serializer
@@ -103,29 +174,24 @@ class CollegeSummaryView(views.APIView):
             return Response({'error': 'Not found'}, status=404)
 
         summary_data = self._get_summary(college)
-        cache.set(cache_key, summary_data, timeout=300)
+        cache.set(cache_key, summary_data, timeout=CACHE_TTL)
         return Response(summary_data)
 
-    def _get_summary(self, college):
-        # Optimized single query fetching minimal lightweight dictionary records
-        facts_qs = FeedbackFact.objects.filter(college=college).values(
-            'submission_id', 'category__category_name', 'score',
-            'would_recommend', 'sentiment', 'positive_feedback', 'complaints', 'suggestions'
-        )
-        facts_list = list(facts_qs)
+    def _get_summary(self, college, facts_list=None):
+        if facts_list is None:
+            facts_list = fetch_college_fact_rows(college.id)
         programs_list = [p.program_name for p in college.programs.all()]
 
-        if not facts_list:
+        score_rows, submission_rows = facts_list
+        if not score_rows:
             return self._empty_summary(college, programs_list)
 
         total_score_sum = 0
         total_score_count = 0
         cat_sums = {}
         cat_counts = {}
-        submissions = {}
 
-        for row in facts_list:
-            sid = str(row['submission_id'])
+        for row in score_rows:
             score = row['score']
             cname = row['category__category_name'] or "General"
 
@@ -135,14 +201,16 @@ class CollegeSummaryView(views.APIView):
             cat_sums[cname] = cat_sums.get(cname, 0) + score
             cat_counts[cname] = cat_counts.get(cname, 0) + 1
 
-            if sid not in submissions:
-                submissions[sid] = {
-                    'would_recommend': row['would_recommend'],
-                    'sentiment': (row['sentiment'] or '').upper(),
-                    'pos': row['positive_feedback'],
-                    'comp': row['complaints'],
-                    'sug': row['suggestions'],
-                }
+        submissions = {
+            str(row['submission_id']): {
+                'would_recommend': row['would_recommend'],
+                'sentiment': (row['sentiment'] or '').upper(),
+                'pos': row['positive_feedback'],
+                'comp': row['complaints'],
+                'sug': row['suggestions'],
+            }
+            for row in submission_rows
+        }
 
         total_reviews = len(submissions)
         overall_avg = round(total_score_sum / total_score_count, 1) if total_score_count > 0 else 0
@@ -253,48 +321,8 @@ class CollegeReviewsView(views.APIView):
         except College.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
-        # Single bulk query with select_related: ELIMINATES N+1 QUERIES!
-        facts = (
-            FeedbackFact.objects.filter(college=college)
-            .select_related('student_profile', 'program', 'category')
-            .order_by('-id')
-        )
-
-        reviews_map = {}
-        for f in facts:
-            sid = str(f.submission_id)
-            if sid not in reviews_map:
-                student_year = ""
-                if f.student_profile:
-                    student_year = f.student_profile.get_year_of_study_display()
-                program_name = f.program.program_name if f.program else ""
-                comment = f.positive_feedback or f.complaints or f.suggestions or ""
-                reviews_map[sid] = {
-                    "id": sid,
-                    "collegeId": college.id,
-                    "studentYear": student_year,
-                    "program": program_name,
-                    "ratings": {},
-                    "sentiment": (f.sentiment or "NEUTRAL").lower(),
-                    "comment": comment
-                }
-
-            cat_name = f.category.category_name if f.category else ""
-            if cat_name:
-                if cat_name == 'Teaching Quality':
-                    reviews_map[sid]['ratings']['teachingQuality'] = f.score
-                elif cat_name in ('Infra — Quality of Equipment', 'Labs'):
-                    reviews_map[sid]['ratings']['labs'] = f.score
-                elif cat_name in ('Wi-Fi & Connectivity', 'Wi-Fi'):
-                    reviews_map[sid]['ratings']['wifi'] = f.score
-                elif cat_name in ('Hostel & Accommodation', 'Hostel'):
-                    reviews_map[sid]['ratings']['hostel'] = f.score
-                elif cat_name in ('Placements & Opportunities', 'Career Placements'):
-                    reviews_map[sid]['ratings']['careerPlacements'] = f.score
-                reviews_map[sid]['ratings'][cat_name] = f.score
-
-        results = list(reviews_map.values())
-        cache.set(cache_key, results, timeout=300)
+        results = build_reviews(college.id, fetch_college_fact_rows(college.id))
+        cache.set(cache_key, results, timeout=CACHE_TTL)
         return Response(results)
 
 class CollegeDashboardBundleView(views.APIView):
@@ -316,12 +344,9 @@ class CollegeDashboardBundleView(views.APIView):
         except College.DoesNotExist:
             return Response({'error': 'College not found'}, status=404)
 
-        summary_view = CollegeSummaryView()
-        summary = summary_view._get_summary(college)
-
-        reviews_view = CollegeReviewsView()
-        reviews_resp = reviews_view.get(request, id)
-        reviews = reviews_resp.data if isinstance(reviews_resp, Response) else []
+        rows = fetch_college_fact_rows(college.id)
+        summary = CollegeSummaryView()._get_summary(college, rows)
+        reviews = build_reviews(college.id, rows)
 
         insights = None
         try:
@@ -336,7 +361,7 @@ class CollegeDashboardBundleView(views.APIView):
             "reviews": reviews,
             "insights": insights,
         }
-        cache.set(cache_key, bundle_data, timeout=300)
+        cache.set(cache_key, bundle_data, timeout=CACHE_TTL)
         return Response(bundle_data)
 
 class ProgramViewSet(viewsets.ReadOnlyModelViewSet):
@@ -539,6 +564,7 @@ class SubmitReviewView(views.APIView):
             cache.delete(f"college_summary_{college.id}")
             cache.delete(f"college_reviews_{college.id}")
             cache.delete(f"college_bundle_{college.id}")
+            cache.delete("college_list")
 
             return Response({
                 "status": "success", 
@@ -833,3 +859,19 @@ class AdminSystemSummaryView(views.APIView):
             return Response({'error': str(e)}, status=500)
 
 
+
+
+def warm_cache():
+    """Pre-populate the response cache so the first visitor doesn't pay the cold-query cost."""
+    from rest_framework.test import APIRequestFactory
+    from analytics.views import CollegeInsightsView, OverviewInsightsView
+
+    factory = APIRequestFactory()
+    try:
+        CollegeViewSet.as_view({'get': 'list'})(factory.get('/api/colleges/'))
+        for college_id in College.objects.values_list('id', flat=True):
+            CollegeDashboardBundleView.as_view()(factory.get('/'), id=college_id)
+            CollegeInsightsView.as_view()(factory.get('/'), id=college_id)
+        OverviewInsightsView.as_view()(factory.get('/'))
+    except Exception as exc:  # warming is best effort only
+        print(f"[cache warm-up skipped] {exc}")

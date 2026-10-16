@@ -18,6 +18,9 @@ from sklearn.metrics import accuracy_score
 MIN_SAMPLES = 10
 
 
+SENTIMENT_COLUMNS = ["sent_NEGATIVE", "sent_NEUTRAL", "sent_POSITIVE"]
+
+
 def train_classifier(df_wide: pd.DataFrame, category_columns: list) -> tuple:
     """
     Fits both GaussianNB and DecisionTreeClassifier on category scores + one-hot sentiment -> would_recommend.
@@ -38,7 +41,7 @@ def train_classifier(df_wide: pd.DataFrame, category_columns: list) -> tuple:
     # One-hot encode sentiment (POSITIVE / NEUTRAL / NEGATIVE)
     sentiment_dummies = pd.get_dummies(
         df["sentiment"].fillna("NEUTRAL"), prefix="sent", dtype=float
-    )
+    ).reindex(columns=SENTIMENT_COLUMNS, fill_value=0.0)
 
     X = pd.concat([df[category_columns].reset_index(drop=True),
                    sentiment_dummies.reset_index(drop=True)], axis=1)
@@ -95,9 +98,11 @@ def predict_recommend_score(model: object, df_wide: pd.DataFrame, category_colum
     if df.empty:
         return None
 
+    # Always emit all three sentiment columns so the feature layout matches training,
+    # even when a college has no reviews of a given sentiment.
     sentiment_dummies = pd.get_dummies(
         df["sentiment"].fillna("NEUTRAL"), prefix="sent", dtype=float
-    )
+    ).reindex(columns=SENTIMENT_COLUMNS, fill_value=0.0)
 
     X = pd.concat([df[category_columns].reset_index(drop=True),
                    sentiment_dummies.reset_index(drop=True)], axis=1)

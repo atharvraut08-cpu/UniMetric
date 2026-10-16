@@ -1,30 +1,27 @@
 import { createBrowserRouter } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
-import HomePage from './pages/HomePage';
-import CollegeDashboardPage from './pages/CollegeDashboardPage';
-import ComparePage from './pages/ComparePage';
-import SubmitFeedbackPage from './pages/SubmitFeedbackPage';
-import AuthPage from './pages/AuthPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
+
+// Each page is its own chunk, fetched on first visit instead of shipping in one big bundle.
+const page = (load) => async () => ({ Component: (await load()).default });
 
 const router = createBrowserRouter([
   // Auth page has its own full-screen layout (no Navbar/Footer)
   {
     path: '/auth',
-    element: <AuthPage />,
+    lazy: page(() => import('./pages/AuthPage')),
   },
   // All other pages use the shared MainLayout shell
   {
     path: '/',
     element: <MainLayout />,
     children: [
-      { index: true,             element: <HomePage />             },
-      { path: 'dashboard',       element: <CollegeDashboardPage /> },
-      { path: 'college/:id',     element: <CollegeDashboardPage /> },
-      { path: 'colleges/:id',    element: <CollegeDashboardPage /> },
-      { path: 'compare',         element: <ComparePage />          },
-      { path: 'submit-feedback', element: <SubmitFeedbackPage />   },
-      { path: 'admin',           element: <AdminDashboardPage />   },
+      { index: true,             lazy: page(() => import('./pages/HomePage'))             },
+      { path: 'dashboard',       lazy: page(() => import('./pages/CollegeDashboardPage')) },
+      { path: 'college/:id',     lazy: page(() => import('./pages/CollegeDashboardPage')) },
+      { path: 'colleges/:id',    lazy: page(() => import('./pages/CollegeDashboardPage')) },
+      { path: 'compare',         lazy: page(() => import('./pages/ComparePage'))          },
+      { path: 'submit-feedback', lazy: page(() => import('./pages/SubmitFeedbackPage'))   },
+      { path: 'admin',           lazy: page(() => import('./pages/AdminDashboardPage'))   },
     ],
   },
 ]);
