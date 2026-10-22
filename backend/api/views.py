@@ -10,10 +10,12 @@ from django.core.cache import cache
 from .models import College, Program, StudentProfile, DateDim, FeedbackCategory, FeedbackFact
 from .serializers import (
     CollegeListSerializer, 
+    CollegeSerializer,
     ProgramSerializer, 
     ReviewSubmitSerializer, 
     StudentRegistrationSerializer
 )
+from .permissions import IsAdminOrReadOnly
 from analytics.models import CollegeInsightCache, GlobalInsightCache
 from analytics.serializers import CollegeInsightSerializer
 from datetime import date, datetime
@@ -120,9 +122,19 @@ def build_reviews(college_id, fact_rows):
     return list(reviews_map.values())
 
 
-class CollegeViewSet(viewsets.ReadOnlyModelViewSet):
+class CollegeViewSet(viewsets.ModelViewSet):
     serializer_class = CollegeListSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminOrReadOnly]
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return CollegeSerializer
+        return CollegeListSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
+        # Invalidate cached college list
+        cache.delete("college_list")
 
     def list(self, request, *args, **kwargs):
         if request.query_params:

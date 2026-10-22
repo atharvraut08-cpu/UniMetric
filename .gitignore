@@ -1,5 +1,102 @@
+# ==============================================================================
+# UNIMETRIC ROOT .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment Variables & Secret Files (CRITICAL - DO NOT COMMIT)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+!*.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+*.p12
+
+# ------------------------------------------------------------------------------
+# 2. Python & Django Environment
+# ------------------------------------------------------------------------------
+venv/
+*/venv/
+.venv/
+*/.venv/
+env/
+*/env/
+ENV/
+backend/venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Django specific
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+*.db
+
+# Python test / coverage / mypy
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.pytype/
+
+# ------------------------------------------------------------------------------
+# 3. Node.js & React Build Environment
+# ------------------------------------------------------------------------------
+node_modules/
+*/node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+.turbo/
+.cache/
+.parcel-cache/
+.eslintcache
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,40 +104,27 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ------------------------------------------------------------------------------
+# 4. Editors, IDEs & Operating System Artifacts
+# ------------------------------------------------------------------------------
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swo
+*.swn
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
 
-# Environment Variables
-.env
-.env.*
-!.env.example
-backend/.env
-backend/.env.*
-!backend/.env.example
-
-# Python / Django
-backend/venv/
-venv/
-__pycache__/
-*.pyc
-
-# SQLite Database
-db.sqlite3
-*.sqlite3
-# Local tooling / tokens
+# Local tooling & AI config
 .claude/
-*.pem
-*.key

@@ -377,3 +377,25 @@ export async function triggerAnalyticsPipeline() {
   }
 }
 
+/**
+ * Creates a new college institution in the database (Admin only).
+ * @param {Object} collegeData - { name, location, college_type }
+ * @param {string} [token] - Optional Supabase auth JWT token
+ * @returns {Promise<Object>} Created college object
+ */
+export async function createCollege(collegeData, token) {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-User-Role': 'Admin',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    const res = await axios.post(`${API_BASE_URL}/colleges/`, collegeData, { headers });
+    return res.data;
+  } catch (error) {
+    console.error('API Error [createCollege]: Failed to create college:', error);
+    throw error;
+  }
+}
+
+

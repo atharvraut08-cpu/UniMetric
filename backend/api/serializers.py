@@ -1,11 +1,16 @@
+from django.db import transaction
 from rest_framework import serializers
 from .models import College, Program, DateDim, FeedbackCategory, FeedbackFact, StudentProfile
 from django.db.models import Avg
 
 class ProgramSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False, read_only=True)
+    college_id = serializers.IntegerField(required=False, read_only=True)
+
     class Meta:
         model = Program
         fields = ['id', 'college_id', 'program_name', 'degree_type', 'subject_area']
+        read_only_fields = ['id', 'college_id']
 
 class StudentRegistrationSerializer(serializers.ModelSerializer):
     program_id = serializers.PrimaryKeyRelatedField(
@@ -68,6 +73,107 @@ class CollegeListSerializer(serializers.ModelSerializer):
         if not hasattr(obj, 'recommend_pct'):
             return 0
         return int(obj.recommend_pct or 0)
+
+
+class CollegeSerializer(serializers.ModelSerializer):
+    """
+    Serializer for College creation and management (POST /api/colleges/).
+    Handles incoming 'college_type' or 'type' (case-insensitive choices:
+    PRIVATE, GOVERNMENT, AUTONOMOUS, DEEMED).
+    Validates required fields and returns frontend-standard representation.
+    """
+    college_type = serializers.CharField(required=False)
+    type = serializers.CharField(source='college_type', required=False)
+    programs = ProgramSerializer(many=True, write_only=True, required=False)
+
+    class Meta:
+        model = College
+        fields = ['id', 'name', 'location', 'college_type', 'type', 'programs', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def validate_name(self, value):
+        val = value.strip()
+        if not val:
+            raise serializers.ValidationError("Institution name is required.")
+        if College.objects.filter(name__iexact=val).exists():
+            raise serializers.ValidationError("An institution with this name is already indexed.")
+        return val
+
+    def validate_location(self, value):
+        val = value.strip()
+        if not val:
+            raise serializers.ValidationError("Location is required.")
+        return val
+
+    def validate_college_type(self, value):
+        val = value.strip().upper()
+        choice_map = {
+            'PRIVATE': 'PRIVATE',
+            'GOVERNMENT': 'GOVERNMENT',
+            'GOVT': 'GOVERNMENT',
+            'AUTONOMOUS': 'AUTONOMOUS',
+            'DEEMED': 'DEEMED',
+            'DEEMED UNIVERSITY': 'DEEMED',
+        }
+        normalized = choice_map.get(val)
+        if not normalized:
+            valid_list = [c[0] for c in College.COLLEGE_TYPE_CHOICES]
+            raise serializers.ValidationError(
+                f"Invalid college type '{value}'. Supported options: {', '.join(valid_list)}"
+            )
+        return normalized
+
+    def to_internal_value(self, data):
+        mutable = data.copy() if hasattr(data, 'copy') else dict(data)
+        if 'type' in mutable and 'college_type' not in mutable:
+            mutable['college_type'] = mutable['type']
+        if not mutable.get('college_type'):
+            raise serializers.ValidationError({"college_type": ["This field is required."]})
+        return super().to_internal_value(mutable)
+
+    @transaction.atomic
+    def create(self, validated_data):
+        """
+        Creates a College and its nested programs in an atomic transaction.
+        If any program fails validation or persistence, the entire transaction rolls back.
+        """
+        programs_data = validated_data.pop('programs', [])
+        college = College.objects.create(**validated_data)
+
+        programs_to_create = []
+        for prog in programs_data:
+            programs_to_create.append(
+                Program(
+                    college=college,
+                    program_name=prog.get('program_name', '').strip(),
+                    degree_type=prog.get('degree_type', '').strip(),
+                    subject_area=prog.get('subject_area', '').strip(),
+                )
+            )
+
+        if programs_to_create:
+            Program.objects.bulk_create(programs_to_create)
+
+        return college
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['type'] = instance.get_college_type_display() if hasattr(instance, 'get_college_type_display') else instance.college_type
+        rep['programs'] = [p.program_name for p in instance.programs.all()]
+        rep['program_details'] = [
+            {
+                'id': p.id,
+                'program_name': p.program_name,
+                'degree_type': p.degree_type,
+                'subject_area': p.subject_area,
+            }
+            for p in instance.programs.all()
+        ]
+        rep['overallRating'] = 0.0
+        rep['totalReviews'] = 0
+        rep['recommendationPercent'] = 0
+        return rep
+
 
 class ReviewSubmitSerializer(serializers.Serializer):
     collegeId = serializers.CharField()

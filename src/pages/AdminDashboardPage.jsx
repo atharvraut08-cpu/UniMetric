@@ -5,14 +5,15 @@ import {
   Clock, CheckCircle2, XCircle, MinusCircle,
   GraduationCap, Activity, Sparkles, RefreshCw, Loader2,
   ExternalLink, ThumbsUp, ThumbsDown, X, Cpu, Database,
-  Trophy, Medal, Award, Star, Search, Building2, Lock,
-  ChevronRight, FileCode, Layers, GitBranch
+  Trophy, Medal, Award, Star, Search, Lock,
+  FileCode, Layers, GitBranch, Plus
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip
 } from 'recharts';
 import { useRole } from '../context/RoleContext';
 import { getAdminSystemSummary } from '../services/mockDataService';
+import AddCollegeModal from '../components/dashboard/AddCollegeModal';
 
 /* ─── Sentiment pill styling ─────────────────────────────────── */
 const sentimentStyle = {
@@ -352,7 +353,7 @@ const CustomPieTooltip = ({ active, payload }) => {
 
 /* ─── Main Admin Dashboard Page ──────────────────────────────── */
 export default function AdminDashboardPage() {
-  const { role, user, isAuthenticated } = useRole();
+  const { role, user, isAuthenticated, session } = useRole();
   const navigate = useNavigate();
 
   const [summaryData, setSummaryData] = useState(null);
@@ -363,8 +364,18 @@ export default function AdminDashboardPage() {
   const [rankingSearch, setRankingSearch] = useState('');
   const [rankingSort, setRankingSort] = useState('rank'); // 'rank', 'rating', 'recommendation', 'reviews', 'composite'
 
-  // Modal state
+  // Modal states
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [isAddCollegeOpen, setIsAddCollegeOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   /* Role guard – redirect non-admins immediately */
   useEffect(() => {
@@ -502,6 +513,15 @@ export default function AdminDashboardPage() {
 
         <div className="flex items-center gap-3">
           <button
+            id="open-add-college-btn-header"
+            onClick={() => setIsAddCollegeOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-coral hover:bg-brand-coral/90 text-white font-bold text-xs shadow-soft hover-lift border border-brand-charcoal transition-all active:scale-95"
+            title="Register New College"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add College</span>
+          </button>
+          <button
             onClick={fetchSummary}
             disabled={loading}
             className="p-2.5 rounded-xl border border-brand-charcoal/10 bg-brand-paper hover:bg-brand-cream text-slate-600 transition-colors shadow-soft"
@@ -573,8 +593,17 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* Controls: Search & Sort */}
+          {/* Controls: Search, Sort & Add College */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <button
+              id="open-add-college-btn-table"
+              onClick={() => setIsAddCollegeOpen(true)}
+              className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-coral hover:bg-brand-coral/90 text-white font-bold text-xs shadow-soft hover-lift border border-brand-charcoal transition-all active:scale-95 whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add New College</span>
+            </button>
+
             <div className="relative min-w-[200px]">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -1145,6 +1174,48 @@ export default function AdminDashboardPage() {
           onClose={() => setSelectedSubmission(null)}
           onNavigateCollege={(id) => navigate(`/college/${id}`)}
         />
+      )}
+
+      {/* ── Add College Modal ── */}
+      <AddCollegeModal
+        isOpen={isAddCollegeOpen}
+        onClose={() => setIsAddCollegeOpen(false)}
+        onCollegeAdded={(newCollege) => {
+          setToast({
+            type: 'success',
+            title: 'College Indexed Successfully',
+            message: `"${newCollege.name}" has been registered into the platform database.`,
+          });
+          fetchSummary();
+        }}
+        authToken={session?.access_token}
+      />
+
+      {/* ── Toast Notification Banner ── */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 max-w-md p-4 rounded-2xl border shadow-2xl flex items-start gap-3 transition-all animate-fade-in ${
+            toast.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-900'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+          }`}
+        >
+          {toast.type === 'error' ? (
+            <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+          ) : (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+          )}
+          <div className="flex-1 text-xs">
+            <p className="font-bold">{toast.title}</p>
+            <p className="mt-0.5 opacity-90">{toast.message}</p>
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 rounded-lg hover:bg-black/5 text-slate-500 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
 
     </div>
