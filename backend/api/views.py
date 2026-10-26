@@ -136,6 +136,28 @@ class CollegeViewSet(viewsets.ModelViewSet):
         # Invalidate cached college list
         cache.delete("college_list")
 
+    def perform_destroy(self, instance):
+        college_id = instance.id
+        instance.delete()
+        # Invalidate cached college list and specific college caches
+        cache.delete("college_list")
+        cache.delete(f"college_summary_{college_id}")
+        cache.delete(f"college_bundle_{college_id}")
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        college_id = instance.id
+        college_name = instance.name
+        self.perform_destroy(instance)
+        return Response(
+            {
+                "success": True,
+                "message": f"Institution '{college_name}' and all associated programs and reviews have been permanently deleted.",
+                "id": college_id,
+            },
+            status=status.HTTP_200_OK
+        )
+
     def list(self, request, *args, **kwargs):
         if request.query_params:
             return super().list(request, *args, **kwargs)

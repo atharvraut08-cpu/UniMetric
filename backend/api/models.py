@@ -33,7 +33,7 @@ class StudentProfile(models.Model):
     ]
     id = models.AutoField(primary_key=True)
     user_id = models.CharField(max_length=100, blank=True, null=True, db_index=True)
-    program = models.ForeignKey(Program, on_delete=models.SET_NULL, null=True, blank=True, related_name="students")
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, blank=True, related_name="students")
     admission_date = models.DateField(null=True, blank=True)
     age_group = models.CharField(max_length=20, blank=True)
     gender = models.CharField(max_length=20, blank=True)

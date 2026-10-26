@@ -398,4 +398,26 @@ export async function createCollege(collegeData, token) {
   }
 }
 
+/**
+ * Permanently deletes a college institution and cascades to all its programs and reviews (Admin only).
+ * @param {number|string} collegeId - College primary key ID
+ * @param {string} [token] - Optional Supabase auth JWT token
+ * @returns {Promise<Object>} Deletion confirmation response
+ */
+export async function deleteCollege(collegeId, token) {
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-User-Role': 'Admin',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    const res = await axios.delete(`${API_BASE_URL}/colleges/${collegeId}/`, { headers });
+    return res.data;
+  } catch (error) {
+    console.error(`API Error [deleteCollege]: Failed to delete college ${collegeId}:`, error);
+    throw error;
+  }
+}
+
+
 

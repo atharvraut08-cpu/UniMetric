@@ -1,18 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   ShieldCheck, Users, TrendingUp, AlertTriangle,
   Clock, CheckCircle2, XCircle, MinusCircle,
   GraduationCap, Activity, Sparkles, RefreshCw, Loader2,
   ExternalLink, ThumbsUp, ThumbsDown, X, Cpu, Database,
   Trophy, Medal, Award, Star, Search, Lock,
-  FileCode, Layers, GitBranch, Plus
+  FileCode, Layers, GitBranch, Plus, Trash2
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip
 } from 'recharts';
 import { useRole } from '../context/RoleContext';
-import { getAdminSystemSummary } from '../services/mockDataService';
+import { getAdminSystemSummary, deleteCollege } from '../services/mockDataService';
 import AddCollegeModal from '../components/dashboard/AddCollegeModal';
 
 /* ─── Sentiment pill styling ─────────────────────────────────── */
@@ -367,6 +367,8 @@ export default function AdminDashboardPage() {
   // Modal states
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [isAddCollegeOpen, setIsAddCollegeOpen] = useState(false);
+  const [collegeToDelete, setCollegeToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState(null);
 
   // Auto-dismiss toast
@@ -398,6 +400,51 @@ export default function AdminDashboardPage() {
       setLoading(false);
     }
   }, []);
+
+  /* Delete college handler with clean optimistic UI array filtering */
+  const handleDeleteCollegeConfirm = async () => {
+    if (!collegeToDelete) return;
+    const targetId = collegeToDelete.id;
+    const targetName = collegeToDelete.name;
+
+    setIsDeleting(true);
+    try {
+      await deleteCollege(targetId, session?.access_token);
+
+      // Cleanly update UI array without requiring a full page reload
+      setSummaryData((prev) => {
+        if (!prev) return prev;
+        const updatedRankings = (prev.college_rankings || [])
+          .filter((c) => c.id !== targetId)
+          .map((c, idx) => ({ ...c, rank: idx + 1 }));
+
+        return {
+          ...prev,
+          counts: {
+            ...prev.counts,
+            total_colleges: Math.max(0, (prev.counts?.total_colleges || 1) - 1),
+          },
+          college_rankings: updatedRankings,
+        };
+      });
+
+      setToast({
+        type: 'success',
+        title: 'College Deleted Successfully',
+        message: `"${targetName}" and all associated programs and reviews have been permanently removed.`,
+      });
+      setCollegeToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete college:', err);
+      setToast({
+        type: 'error',
+        title: 'Failed to Delete College',
+        message: err.response?.data?.message || err.response?.data?.detail || err.message || 'Unable to delete college.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (role === 'Admin') {
@@ -670,7 +717,7 @@ export default function AdminDashboardPage() {
                   </td>
                 </tr>
               ) : (
-                filteredRankings.map((col) => {
+                filteredRankings.map((col, _idx) => {
                   const isTop1 = col.rank === 1;
                   const isTop2 = col.rank === 2;
                   const isTop3 = col.rank === 3;
@@ -787,18 +834,31 @@ export default function AdminDashboardPage() {
                       </td>
 
                       {/* Action */}
-                      <td className="py-3.5 px-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/college/${col.id}`);
-                          }}
-                          className="px-2.5 py-1 rounded-xl text-slate-500 hover:text-brand-charcoal hover:bg-brand-charcoal/10 transition-colors inline-flex items-center gap-1 text-[11px] font-bold"
-                          title="Open college profile"
-                        >
-                          <span>Profile</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/analytics/${col.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-[#191919] bg-white border border-[#191919] px-3 py-1.5 rounded-lg hover:bg-[#191919] hover:text-white transition-colors shadow-2xs"
+                            title="Open college profile"
+                          >
+                            <span>Profile</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                          <button
+                            id={`delete-college-btn-${col.id}`}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCollegeToDelete(col);
+                            }}
+                            className="inline-flex items-center gap-1 text-xs font-black uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-600 hover:text-white transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-rose-500"
+                            title={`Delete ${col.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1190,6 +1250,74 @@ export default function AdminDashboardPage() {
         }}
         authToken={session?.access_token}
       />
+
+      {/* ── Delete College Confirmation Modal ── */}
+      {collegeToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          onClick={() => {
+            if (!isDeleting) setCollegeToDelete(null);
+          }}
+        >
+          <div
+            className="bg-white border-2 border-[#191919] rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-[8px_8px_0px_0px_#191919] relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3.5 mb-4 pb-4 border-b border-gray-200">
+              <div className="p-3 bg-rose-100 border-2 border-[#191919] rounded-2xl text-rose-600 shadow-[2px_2px_0px_0px_#191919] flex-shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                  Irreversible Action
+                </span>
+                <h3 className="text-xl font-black text-[#191919] mt-0.5">
+                  Delete Institution
+                </h3>
+              </div>
+            </div>
+
+            {/* Warning Body */}
+            <div className="mb-6 space-y-3">
+              <p className="text-sm font-semibold text-gray-800 leading-relaxed">
+                Are you sure you want to delete <span className="font-black text-[#191919] underline decoration-rose-500 decoration-2">{collegeToDelete.name}</span>? All associated programs, student profiles, and reviews will be permanently wiped.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => setCollegeToDelete(null)}
+                disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl border-2 border-[#191919] font-black text-xs uppercase tracking-wider text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                id="confirm-delete-college-btn"
+                type="button"
+                onClick={handleDeleteCollegeConfirm}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-[#191919] font-black text-xs uppercase tracking-wider text-white bg-rose-600 hover:bg-rose-700 shadow-[3px_3px_0px_0px_#191919] active:translate-x-0.5 active:translate-y-0.5 transition-all disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Wiping Data...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Toast Notification Banner ── */}
       {toast && (

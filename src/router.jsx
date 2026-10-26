@@ -19,6 +19,7 @@ const router = createBrowserRouter([
       { path: 'dashboard',       lazy: page(() => import('./pages/CollegeDashboardPage')) },
       { path: 'college/:id',     lazy: page(() => import('./pages/CollegeDashboardPage')) },
       { path: 'colleges/:id',    lazy: page(() => import('./pages/CollegeDashboardPage')) },
+      { path: 'analytics/:id',   lazy: page(() => import('./pages/CollegeDashboardPage')) },
       { path: 'compare',         lazy: page(() => import('./pages/ComparePage'))          },
       { path: 'submit-feedback', lazy: page(() => import('./pages/SubmitFeedbackPage'))   },
       { path: 'admin',           lazy: page(() => import('./pages/AdminDashboardPage'))   },
